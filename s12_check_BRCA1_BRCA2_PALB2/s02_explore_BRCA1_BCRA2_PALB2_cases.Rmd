@@ -1,0 +1,170 @@
+---
+title: "s02_explore_BRCA1_BCRA2_PALB2_cases"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL25Sep2018  
+last updated: AL25Apr2019  
+
+# Summary  
+
+Previous analysis identifyed  
+5 likely pathogenic variants in BRCA1, BRCA2 and PALB2. 
+This script reports samples carrying these variants to review in IGF.   
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_check_BRCA1_BRCA2_PALB2"
+
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read_data  
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
+load(paste(source_folder, "s02_remove_duplicates.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_check_BRCA1_BRCA2_PALB2"
+rm(source_folder)
+
+selected_variants.df <- read.table(paste(base_folder,"s01_BRCA1_BRCA2_PALB2_high_impact_variants.txt",sep="/"),
+                                   header = T)
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+dim(selected_variants.df)
+
+```
+
+# Select candidate pathogenic variants  
+
+```{r}
+
+pathogenic_variants <- selected_variants.df$SplitVarID
+
+```
+
+# Select most informative fields
+
+```{r select_fields}
+
+selected_fields <- c("SplitVarID", "SYMBOL", "CHROM", "POS", "REF", "ALT", "Multiallelic", 
+                     "Consequence", "IMPACT", "Existing_variation", 
+                     "init_AF", "kgen.EUR_AF", "exac_non_TCGA.AC_NFE", "exac_non_TCGA.AF",
+                     "exac_non_TCGA.AC_NFE", "exac_non_TCGA.AN_NFE", 
+                     
+                     "CLIN_SIG", 
+                     
+                     "cDNA_position", "Codons", "Amino_acids", "Protein_position")
+
+length(selected_fields)
+
+selected_variants.df <- variants.df[pathogenic_variants,selected_fields]
+selected_genotypes.mx <- genotypes.mx[pathogenic_variants,]
+
+dim(selected_variants.df)
+
+rm(selected_fields, pathogenic_variants)
+
+```
+
+# Select carriers
+
+```{r select_carriers}
+
+selected_ac_per_sample <- apply(selected_genotypes.mx, 2, sum, na.rm=T)
+carriers <- selected_ac_per_sample > 0
+sum(carriers)
+selected_genotypes.mx <- selected_genotypes.mx[,carriers]
+selected_genotypes.mx
+colnames(selected_genotypes.mx)
+
+rm(selected_ac_per_sample, carriers, selected_variants.df)
+
+```
+
+# Write BRCA1, BRCA2, and PALB2 carriers to text files
+
+```{r write_to_text}
+
+write.table(selected_genotypes.mx, file=paste(base_folder,"s02_BRCA1_BRCA2_PALB2_carriers.txt",sep="/"),
+            quote=F, sep="\t", col.names=T, row.names=T)
+
+rm(selected_genotypes.mx)
+
+```
+
+# Check data
+
+```{r final_check}
+
+ls()
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

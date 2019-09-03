@@ -1,0 +1,211 @@
+---
+title: "s03_update_variants_annotations"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL10Dec2018  
+last updated: AL24Apr2019  
+
+# Summary  
+
+Retain only most informative fields  
+Update types of the selected fields  
+
+Overall this changes number of columns in vars.df from 102 to 65  
+(will be further reduced later)  
+
+Input and Output data: 1,878 vars x 732 Samples  
+
+# start section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+# eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+library(tidyr) # for separate (parsing of cDNA, CDC and prot positions)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s08_reshape_variants_annotations"
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read data
+
+```{r read_data}
+
+load(paste(base_folder, "s02_explore_annotations_add_hwe.RData", sep="/"))
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+dim(gt.mx)
+dim(vars.df)
+sum(rownames(gt.mx) != rownames(vars.df))
+
+colnames(vars.df)
+
+```
+
+# Keep selected informative annotations  
+
+Removed non-informative annotations:  
+ID, BaseQRankSum, ClippingRankSum, FS, MLEAC, MLEAF, MQRankSum,  
+QD, ReadPosRankSum, SOR, culprit, NEAREST,  
+cv_CLNDISDB, cv_CLNVCSO, cv_CLNVI, cv_SSR, cv_ORIGIN, cv_RS  
+cv_AF_ESP, cv_AF_EXAC, cv_AF_TGP, cv_CLNSIGINCL, cv_CLNDNINCL, cv_CLNDISDBINCL
+
+```{r update_var_annotations}
+
+selected_annottions=c(
+
+"SplitVarID","CHROM","POS","REF","ALT",
+
+"SYMBOL","Consequence","DISTANCE","STRAND","IMPACT",
+
+"Existing_variation","init_AC","init_AN","init_AF",
+"QUAL","AS_VQSLOD","DP","DS","MQ",
+"NEGATIVE_TRAIN_SITE","POSITIVE_TRAIN_SITE",
+"hwe_biallelic","InbreedingCoeff","ExcessHet",
+"Multiallelic",
+
+"Allele",
+"Codons","Amino_acids",
+"cDNA_position","CDS_position","Protein_position",
+
+"CLIN_SIG",
+
+"SIFT_call","SIFT_score","PolyPhen_call","PolyPhen_score",
+
+"kgen.AC","kgen.AN","kgen.AF",
+"kgen.AFR_AF","kgen.AMR_AF","kgen.EUR_AF","kgen.SAS_AF","kgen.EAS_AF",
+
+"exac_non_TCGA.AC","exac_non_TCGA.AN","exac_non_TCGA.AF",
+
+"exac_non_TCGA.AC_Adj","exac_non_TCGA.AC_MALE","exac_non_TCGA.AC_FEMALE",
+"exac_non_TCGA.AC_AFR","exac_non_TCGA.AC_AMR","exac_non_TCGA.AC_NFE","exac_non_TCGA.AC_FIN",
+"exac_non_TCGA.AC_SAS","exac_non_TCGA.AC_EAS",
+
+"exac_non_TCGA.AN_Adj","exac_non_TCGA.AN_MALE","exac_non_TCGA.AN_FEMALE",
+"exac_non_TCGA.AN_AFR","exac_non_TCGA.AN_AMR","exac_non_TCGA.AN_NFE","exac_non_TCGA.AN_FIN",
+"exac_non_TCGA.AN_SAS","exac_non_TCGA.AN_EAS"
+)
+
+length(selected_annottions)
+vars.df <- vars.df[,selected_annottions]
+dim(vars.df)
+
+# Clean-up
+rm(selected_annottions)
+
+```
+
+# Update types of retained annotations in vars.df  
+
+```{r update_vars_types}
+
+str(vars.df, list.len=ncol(vars.df))
+
+vars.df$init_AC <- as.integer(vars.df$init_AC)
+vars.df$init_AF <- as.numeric(vars.df$init_AF)
+
+vars.df$AS_VQSLOD <- as.numeric(vars.df$AS_VQSLOD)
+
+vars.df$DISTANCE <- as.integer(vars.df$DISTANCE)
+vars.df$STRAND <- as.integer(vars.df$STRAND)
+
+vars.df$kgen.AC <- as.integer(vars.df$kgen.AC)
+vars.df$kgen.AF <- as.numeric(vars.df$kgen.AF)
+vars.df$kgen.AFR_AF <- as.numeric(vars.df$kgen.AFR_AF)
+vars.df$kgen.AMR_AF <- as.numeric(vars.df$kgen.AMR_AF)
+vars.df$kgen.EUR_AF <- as.numeric(vars.df$kgen.EUR_AF)
+vars.df$kgen.SAS_AF <- as.numeric(vars.df$kgen.SAS_AF)
+vars.df$kgen.EAS_AF <- as.numeric(vars.df$kgen.EAS_AF)
+
+vars.df$exac_non_TCGA.AC <- as.integer(vars.df$exac_non_TCGA.AC)
+vars.df$exac_non_TCGA.AF <- as.numeric(vars.df$exac_non_TCGA.AF)
+
+vars.df$exac_non_TCGA.AC_Adj <- as.integer(vars.df$exac_non_TCGA.AC_Adj)
+vars.df$exac_non_TCGA.AC_MALE <- as.integer(vars.df$exac_non_TCGA.AC_MALE)
+vars.df$exac_non_TCGA.AC_FEMALE <- as.integer(vars.df$exac_non_TCGA.AC_FEMALE)
+vars.df$exac_non_TCGA.AC_AFR <- as.integer(vars.df$exac_non_TCGA.AC_AFR)
+vars.df$exac_non_TCGA.AC_AMR <- as.integer(vars.df$exac_non_TCGA.AC_AMR)
+vars.df$exac_non_TCGA.AC_NFE <- as.integer(vars.df$exac_non_TCGA.AC_NFE)
+vars.df$exac_non_TCGA.AC_FIN <- as.integer(vars.df$exac_non_TCGA.AC_FIN)
+vars.df$exac_non_TCGA.AC_SAS <- as.integer(vars.df$exac_non_TCGA.AC_SAS)
+vars.df$exac_non_TCGA.AC_EAS <- as.integer(vars.df$exac_non_TCGA.AC_EAS)
+
+vars.df$exac_non_TCGA.AN_MALE <- as.integer(vars.df$exac_non_TCGA.AN_MALE)
+vars.df$exac_non_TCGA.AN_FEMALE <- as.integer(vars.df$exac_non_TCGA.AN_FEMALE)
+
+str(vars.df, list.len=ncol(vars.df))
+
+```
+
+# Check data
+
+```{r final_check}
+
+ls()
+dim(gt.mx)
+dim(vars.df)
+sum(rownames(gt.mx) != rownames(vars.df))
+
+colnames(vars.df)
+
+```
+
+# Save result
+
+```{r save_result}
+
+save.image(paste(base_folder, "s03_update_variants_annotations.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

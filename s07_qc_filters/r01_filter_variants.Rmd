@@ -1,0 +1,251 @@
+---
+title: "Filter_variants_ampliseq_nfe"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: Alexey Larionov, 28Mar2019  
+last updated: Alexey Larionov, 16Apr2019  
+
+# Summary 
+
+1) keep only FILTER == PASS  
+2) Explore QUAL and DP  
+3) Additionally: remove ad.mx  
+
+Input data: 13,046 vars x 739 cases (541 wecare + 198 nfe)  
+Output data: 8,275 vars x 739 cases (541 wecare + 198 nfe)  
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+# eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clenan-up
+rm(list=ls())
+graphics.off()
+
+# Base folder
+library(knitr)
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s07_filter_genotypes_and_variants"
+opts_knit$set(root.dir = base_folder)
+options(stringsAsFactors = F,
+        warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+#setwd(base_folder)
+
+```
+
+# read_data  
+
+```{r load_data}
+
+data_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s06_read_vcf_to_r"
+load(paste(data_folder, "s01_read_vcf_to_r.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s07_filter_genotypes_and_variants"
+rm(data_folder, ad.mx)
+
+```
+
+# check_data
+
+```{r start_check}
+
+# List objects
+ls()
+
+# Check sizes
+dim(gt_add.mx)
+dim(gt_num.mx)
+dim(gt_chr.mx)
+dim(ref.mx)
+dim(alt.mx)
+
+dim(gq.mx)
+dim(dp.mx)
+
+dim(fixed.df)
+colnames(fixed.df)
+
+dim(meta.df)
+
+# Check consistence of rownames and colnames
+
+sum(rownames(gt_add.mx) != rownames(gt_num.mx))
+sum(rownames(gt_add.mx) != rownames(gt_chr.mx))
+sum(rownames(gt_add.mx) != rownames(ref.mx))
+sum(rownames(gt_add.mx) != rownames(alt.mx))
+sum(rownames(gt_add.mx) != rownames(gq.mx))
+sum(rownames(gt_add.mx) != rownames(dp.mx))
+
+sum(colnames(gt_add.mx) != colnames(gt_num.mx))
+sum(colnames(gt_add.mx) != colnames(gt_chr.mx))
+sum(colnames(gt_add.mx) != colnames(ref.mx))
+sum(colnames(gt_add.mx) != colnames(alt.mx))
+sum(colnames(gt_add.mx) != colnames(gq.mx))
+sum(colnames(gt_add.mx) != colnames(dp.mx))
+
+sum(rownames(gt_add.mx) != rownames(fixed.df))
+
+```
+
+# Explore FILTER
+
+```{r explore_filter}
+
+sort(summary(as.factor(fixed.df$FILTER)), decreasing = T)
+
+```
+
+# Explore QUAL before applying FILTER
+
+```{r qual_before}
+
+hist(fixed.df$QUAL, lab=T, ylim=c(0,15000))
+hist(fixed.df$QUAL[fixed.df$QUAL < 100], lab=T, 
+     xlim=c(0,100), ylim=c(0,1000))
+quantile(fixed.df$QUAL)
+
+```
+
+# Variant DP before applying FILTER
+
+```{r variant_DP_before}
+
+sum(is.na(fixed.df$DP)) # Multiallelic variants
+
+hist(fixed.df$DP, lab=T, ylim=c(0,15000))
+hist(fixed.df$DP[fixed.df$DP < 1e5], lab=T, 
+     xlim=c(0,1e5), ylim=c(0,2500))
+quantile(fixed.df$DP, na.rm=T)
+
+```
+
+# Apply FILTER
+
+```{r apply_filter}
+
+passed_filter <- fixed.df$FILTER=="PASS"
+sum(is.na(passed_filter))
+
+fixed.df <- fixed.df[passed_filter,]
+dim(fixed.df)
+
+gt_add.mx <- gt_add.mx[passed_filter,]
+gt_num.mx <- gt_num.mx[passed_filter,]
+gt_chr.mx <- gt_chr.mx[passed_filter,]
+ref.mx <- ref.mx[passed_filter,]
+alt.mx <- alt.mx[passed_filter,]
+dp.mx <- dp.mx[passed_filter,]
+gq.mx <- gq.mx[passed_filter,]
+
+rm(passed_filter)
+
+```
+
+# QUAL after applying FILTER
+
+```{r qual_after}
+
+hist(fixed.df$QUAL, lab=T, ylim=c(0,10000))
+hist(fixed.df$QUAL[fixed.df$QUAL < 100], lab=T, 
+     xlim=c(0,100), ylim=c(0,600))
+quantile(fixed.df$QUAL)
+
+```
+
+# Variant DP after applying FILTER
+
+```{r variant_DP_after}
+
+sum(is.na(fixed.df$DP)) # Multiallelic variants
+
+hist(fixed.df$DP, lab=T, ylim=c(0,10000))
+hist(fixed.df$DP[fixed.df$DP < 1e5], lab=T, 
+     xlim=c(0,1e5), ylim=c(0,1500))
+quantile(fixed.df$DP, na.rm=T)
+
+```
+
+# check_data
+
+```{r end_check}
+
+# List objects
+ls()
+
+# Check sizes
+dim(gt_add.mx)
+dim(gt_num.mx)
+dim(gt_chr.mx)
+dim(ref.mx)
+dim(alt.mx)
+
+dim(gq.mx)
+dim(dp.mx)
+
+dim(fixed.df)
+colnames(fixed.df)
+
+dim(meta.df)
+
+# Check consistence of rownames and colnames
+
+sum(rownames(gt_add.mx) != rownames(gt_num.mx))
+sum(rownames(gt_add.mx) != rownames(gt_chr.mx))
+sum(rownames(gt_add.mx) != rownames(ref.mx))
+sum(rownames(gt_add.mx) != rownames(alt.mx))
+sum(rownames(gt_add.mx) != rownames(gq.mx))
+sum(rownames(gt_add.mx) != rownames(dp.mx))
+
+sum(colnames(gt_add.mx) != colnames(gt_num.mx))
+sum(colnames(gt_add.mx) != colnames(gt_chr.mx))
+sum(colnames(gt_add.mx) != colnames(ref.mx))
+sum(colnames(gt_add.mx) != colnames(alt.mx))
+sum(colnames(gt_add.mx) != colnames(gq.mx))
+sum(colnames(gt_add.mx) != colnames(dp.mx))
+
+sum(rownames(gt_add.mx) != rownames(fixed.df))
+
+```
+
+# save_data
+
+```{r save_data}
+
+save.image(paste(base_folder, "r01_filter_variants.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

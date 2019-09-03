@@ -1,0 +1,250 @@
+---
+title: "s04_add_phenotypes"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL10Sep2018  
+last updated: AL24Apr2019  
+
+# Summary  
+
+- Initially, phenotype data were provided by Xiaolin in e-mail to Marc of 29Aug2018  
+  (used here in file phenotypes_dec2018.txt)  
+- Then, updated data were provided to me by Marc in e-mail of 07Jan2019  
+  (file phenotypes_jan2019.txt, contains data about familial history, X-ray treatment etc)  
+- The script reads both sets and compares them before use  
+- The script syncs phenotype cases IDs with the samples names in sequencing 
+- Then script renames and syncronises data (removes cases failed sequencing from phenotype data)   
+
+Input and Output data: 1,878 vars x 732 Samples ( 535BC = 265UBC + 270CBC and 197NFE)  
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+library(ggplot2)
+
+library(vcfR) # for reading VCF with samples names
+library(tidyr) # for separate (samples names parsing)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s09_add_phenotypes"
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read_data  
+
+```{r read_data}
+
+# Phenotype data
+phenotypes_2018_file <- paste(base_folder, "phenotypes/phenotypes_dec2018.txt", sep="/")
+phenotypes_2018.df <- read.table(phenotypes_2018_file, header=T, sep="\t", quote="")
+
+phenotypes_2019_file <- paste(base_folder, "phenotypes/phenotypes_jan2019.txt", sep="/")
+phenotypes_2019.df <- read.table(phenotypes_2019_file, header=T, sep="\t", quote="")
+
+# Sequencing data
+data_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s08_reshape_variants_annotations"
+load(paste(data_folder, "s03_update_variants_annotations.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s09_add_phenotypes"
+
+# Clean-up
+rm(phenotypes_2018_file, phenotypes_2019_file, data_folder)
+
+```
+
+# Compare phenotypes provided in 2018 and 2019
+
+```{r compare_phenotypes}
+
+dim(phenotypes_2018.df)
+dim(phenotypes_2019.df)
+
+sum(is.na(phenotypes_2018.df))
+sum(is.na(phenotypes_2019.df))
+
+colnames(phenotypes_2018.df)
+colnames(phenotypes_2019.df)
+
+identical_fields <- colnames(phenotypes_2018.df)
+sum(phenotypes_2018.df[,identical_fields] != phenotypes_2019.df[,identical_fields])
+
+rm(identical_fields)
+
+```
+
+# Rename matrices
+
+```{r update_variants}
+
+variants.df <- vars.df
+genotypes.mx <- gt.mx
+wecare_phenotypes.df <- phenotypes_2019.df
+
+sum(is.na(wecare_phenotypes.df))
+sum(wecare_phenotypes.df=="")
+
+dim(wecare_phenotypes.df)
+dim(variants.df)
+dim(genotypes.mx)
+
+rm(gt.mx, vars.df, phenotypes_2018.df, phenotypes_2019.df)
+
+```
+
+# Add wecare_phenotypes IDs  
+
+The initial phenotype table includes samples numbers (e.g. 40),  
+while the sequencing data include alphanumerical IDs (e.g. 40_S189_L007)  
+
+This chunk adds alphanumerical IDs to the phenotype table as rownames  
+
+```{r phenotypes_rownames}
+
+# Get list of long IDs for all 541 samples
+vcf_file="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s04_annotated_vcf/ampliseq_nfe.vcf"
+vcfr <- read.vcfR(vcf_file)
+gt_739.mx <- extract.gt(vcfr)
+
+dim(gt_739.mx)
+gt_739.mx[1:5,1:5]
+gt_739.mx[1:5,541:542]
+gt_739.mx[1:5,735:739]
+wecare_samples.df <- data.frame(long_ids=colnames(gt_739.mx)[1:541])
+nfe_samples.df <- data.frame(long_ids=colnames(gt_739.mx)[542:739])
+
+# Split the long IDs for wecare samples
+wecare_samples.df <- separate(wecare_samples.df, "long_ids", c("num", "illumina_id", "illumina_lane"), 
+                              sep="_", remove=F) 
+wecare_samples.df$num <- as.integer(wecare_samples.df$num)
+dim(wecare_samples.df)
+str(wecare_samples.df)
+wecare_samples.df[1:5,]
+
+# Sort wecare_samples.df by sample num (to sync with phenotypes.df)
+wecare_samples.df <- wecare_samples.df[order(wecare_samples.df$num),]
+wecare_samples.df[1:5,]
+wecare_phenotypes.df[1:5,1:5]
+
+# Bind add long IDs to phenotypes table
+wecare_phenotypes.df <- cbind(wecare_samples.df, wecare_phenotypes.df)
+
+# Check that numbers are identical
+sum(wecare_phenotypes.df$num == wecare_phenotypes.df$Sample_num)
+sum(wecare_phenotypes.df$num != wecare_phenotypes.df$Sample_num)
+
+# Remove one of the numbers
+wecare_phenotypes.df <- wecare_phenotypes.df[,-2]
+dim(wecare_phenotypes.df)
+colnames(wecare_phenotypes.df)
+str(wecare_phenotypes.df)
+
+# Prepare phenotype data for nfe
+nfe_phenotypes.df <- data.frame(nfe_samples.df,matrix(NA,nrow=198,ncol=23))
+
+colnames(wecare_phenotypes.df) -> colnames(nfe_phenotypes.df)
+nfe_phenotypes.df$cc <- -1
+
+nfe_phenotypes.df$cc <- as.integer(nfe_phenotypes.df$cc)
+
+# Merge wecare and nfe phenotype data 
+phenotypes.df <- rbind(wecare_phenotypes.df, nfe_phenotypes.df)
+dim(phenotypes.df)
+
+# Set rownames
+rownames(phenotypes.df) <- phenotypes.df$long_ids
+
+# Check results
+genotypes.mx[1:5,1:5]
+variants.df[1:5,1:5]
+phenotypes.df[1:5,1:5]
+
+# Clean-up
+rm(vcf_file, vcfr, gt_739.mx, wecare_samples.df, nfe_samples.df,
+   wecare_phenotypes.df, nfe_phenotypes.df)
+
+```
+
+# Sync phenotypes and genotypes
+
+Remove samples failed sequencing (6 wecare and 1 nfe)  
+
+```{r sync_pheno_geno}
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+
+phenotypes.df <- phenotypes.df[colnames(genotypes.mx),]
+
+dim(phenotypes.df)
+
+```
+
+# check data
+
+```{r end_check}
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+table(phenotypes.df$cc)
+
+```
+
+# save_results
+
+```{r save_results}
+
+save.image(paste(base_folder, "s01_add_phenotypes.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

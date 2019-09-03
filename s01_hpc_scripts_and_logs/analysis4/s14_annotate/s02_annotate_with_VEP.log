@@ -1,0 +1,35 @@
+Job id: 10044668
+Job name: s02_annotate_with_VEP
+Allocated node: cpu-e-130
+Time: Mon 18 Mar 15:23:45 GMT 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s14_annotate
+
+------------------ Output ------------------
+
+Annotate VCF with VEP
+Mon 18 Mar 15:23:45 GMT 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s14_annotate
+
+source_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s14_annotated_vcf/ampliseq_nfe_locID_MAflag_vqsr_hf_MAsplit_kgen_exac.vcf
+target_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s14_annotated_vcf/ampliseq_nfe.vcf
+vcf_md5: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s14_annotated_vcf/ampliseq_nfe.md5
+vep_stats: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s14_annotated_vcf/ampliseq_nfe.html
+vep_log: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s14_annotated_vcf/ampliseq_nfe.log
+
+--- VEP ---
+
+ensembl_api_folder: /rds/project/erf33/rds-erf33-medgen/tools/ensembl/v87
+vep_script: /rds/project/erf33/rds-erf33-medgen/tools/ensembl/v87/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
+vep_cache: /rds/project/erf33/rds-erf33-medgen/tools/ensembl/v87/grch37_vep_cache
+vep_fields:
+SYMBOL,Allele,Existing_variation,Consequence,IMPACT,CLIN_SIG,SIFT,PolyPhen,cDNA_position,CDS_position,Codons,Protein_position,Amino_acids,DISTANCE,STRAND,SYMBOL_SOURCE
+
+Adding VEP annotations...
+Done
+Mon 18 Mar 15:25:56 GMT 2019
+

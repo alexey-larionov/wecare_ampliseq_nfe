@@ -1,0 +1,44 @@
+Job id: 13072413
+Job name: s01_merge_1kg_and_ampliseq_for_PCA
+Allocated node: cpu-e-96
+Time: Wed 10 Jul 20:55:34 BST 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s17_merge_1kg_and_ampliseq_for_PCA
+
+------------------ Output ------------------
+
+Merge 2,504 1kg and 715 ampliseq-nfe samples for PCA
+Wed 10 Jul 20:55:34 BST 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s17_merge_1kg_and_ampliseq_for_PCA
+
+selected_1kg_1140_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/selected_1140_1kg_genotypes.vcf.gz
+ampliseq_nfe_1140_715_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s16_prepare_wecare_genotypes_for_PCA/ampliseq_nfe_1140_715.vcf.gz
+ampliseq_nfe_1kg_1111_3219_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s17_merge_1kg_and_ampliseq_for_PCA/ampliseq_nfe_1kg_1111_3219.vcf.gz
+
+--- Tools ---
+
+bcftools: /rds/project/erf33/rds-erf33-medgen/tools/bcftools/bcftools-1.8/bin/bcftools
+
+Merging VCFs ...
+
+Number of variants in the output:
+1,140
+
+Number of samples in the output:
+3,219
+
+Removing multiallelics (if any), keeping only SNPs ...
+
+Number of variants in the output:
+1,111
+
+Number of samples in the output:
+3,219
+
+Done
+Wed 10 Jul 20:55:40 BST 2019
+

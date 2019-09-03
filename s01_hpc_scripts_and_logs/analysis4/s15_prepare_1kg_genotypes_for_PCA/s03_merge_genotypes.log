@@ -1,0 +1,39 @@
+Job id: 13057373
+Job name: s03_merge_genotypes
+Allocated node: cpu-e-18
+Time: Wed 10 Jul 12:36:57 BST 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s15_prepare_1kg_genotypes_for_PCA
+
+------------------ Output ------------------
+
+Select 1,140 genotypes from 1kg for joined PCA plot
+Wed 10 Jul 12:36:57 BST 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s15_prepare_1kg_genotypes_for_PCA
+
+source_data_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/by_chromosome
+output_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/selected_1140_1kg_genotypes.vcf.gz
+
+--- Tools ---
+
+bcftools: /rds/project/erf33/rds-erf33-medgen/tools/bcftools/bcftools-1.8/bin/bcftools
+
+Detected 22 files to concatenate
+
+Indexing ...
+
+Concatenating ...
+
+Writing to /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/tmp_sort
+Merging 1 temporary files
+Cleaning
+Done
+Number of variants in concatenated vcf: 1140
+
+Done
+Wed 10 Jul 12:37:01 BST 2019
+

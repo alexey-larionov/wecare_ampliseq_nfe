@@ -1,0 +1,295 @@
+---
+title: "s01_check_duplicates"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL07Dec2018  
+last updated: AL24Apr2019  
+
+# Summary  
+
+Check concordance rates for common variants in each-to-each-case basis  
+The purpose is to find the intentional duplicates introduced for QC purposes  
+
+Detected 11 pairs of intended QC duplicates:  
+
+40_S189_L007 - 41_S328_L008  
+76_S299_L008 - 77_S370_L008  
+234_S381_L008 - 235_S535_L008  
+244_S175_L007 - 245_S59_L007  
+280_S173_L007 - 281_S185_L007    **both should be keept as explained by US collaborators**  
+347_S36_L007 - 348_S17_L007  
+398_S161_L007 - 399_S255_L007  
+436_S178_L007 - 437_S177_L007  
+517_S450_L008 - 518_S384_L008  
+527_S233_L007 - 528_S275_L008  
+539_S288_L008 - 540_S461_L008  
+
+and 2 pairs of additional duplicates (with distinct phenotypes):  
+
+270_S70_L007 - 351_S71_L007      **are located near each other on the plate**  
+386_S273_L008 - 391_S376_L008  
+
+One pair of intended duplicates was not detected because  
+a samples from this pair failed sequencing (108):  
+108_S482_L008 - 109_S484_L008  
+
+Input data: 1,878 vars x 732 Samples ( 535BC = 265UBC + 270CBC and 197NFE)  
+No output data  
+
+# start section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+# eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+library(ggplot2)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read data
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s09_add_phenotypes"
+load(paste(source_folder, "s01_add_phenotypes.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
+rm(source_folder)
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# Calculate concordance matrix  
+
+Use common variants only  
+
+```{r concordance_matrix}
+
+# Remove common variants
+common_vars <- variants.df$init_AF >= 0.05 & variants.df$init_AF <= 0.95
+sum(common_vars)
+gt_com.mx <- genotypes.mx[common_vars,]
+dim(gt_com.mx)
+
+# Initialise concordance matrix
+conc.mx <- matrix(NA, ncol=ncol(gt_com.mx), nrow=ncol(gt_com.mx))
+colnames(conc.mx) <- colnames(gt_com.mx)
+rownames(conc.mx) <- colnames(gt_com.mx)
+conc.mx[1:5,1:5]
+
+# Initialise counts matrix
+cnts.mx <- matrix(NA, ncol=ncol(gt_com.mx), nrow=ncol(gt_com.mx))
+colnames(cnts.mx) <- colnames(gt_com.mx)
+rownames(cnts.mx) <- colnames(gt_com.mx)
+cnts.mx[1:5,1:5]
+
+# Calculate concordances
+for(sample_1 in colnames(gt_com.mx)){
+  for(sample_2 in colnames(gt_com.mx)){
+    
+    # Get vectors of variants for both samples
+    smp1 <- gt_com.mx[,sample_1]
+    smp2 <- gt_com.mx[,sample_2]
+    
+    # Calculate concordance
+    total <- sum(!is.na(smp1) & !is.na(smp2))
+    concordant <- sum(smp1==smp2, na.rm=T)
+    concordance_rate <- concordant / total
+    
+    # Write result
+    if(sample_1 == sample_2){
+      NA  -> cnts.mx[sample_1,sample_2]
+      NA  -> conc.mx[sample_1,sample_2]
+    }else{
+      total -> cnts.mx[sample_1,sample_2]
+      concordance_rate -> conc.mx[sample_1,sample_2]
+    }
+  }
+}
+
+# Check results
+cnts.mx[1:5,1:5]
+conc.mx[1:5,1:5]
+
+# Clean-up
+rm(common_vars, gt_com.mx, sample_1, sample_2, smp1, smp2,
+   total, concordant, concordance_rate)
+
+```
+
+# Explore concordance matrix
+
+```{r explore_concordances}
+
+# No missed values (except self-concordance/count)
+dim(cnts.mx)
+sum(is.na(cnts.mx))
+sum(is.na(conc.mx))
+
+# Histograms
+
+hist(cnts.mx)
+quantile(cnts.mx, na.rm=T)
+mean(cnts.mx, na.rm=T)
+
+hist(conc.mx, ylim=c(0,200000), lab=T)
+hist(conc.mx[conc.mx > 0.9], lab=T, ylim=c(0,30))
+sum(conc.mx == 1, na.rm=T)
+
+# Make list of most similar samples (concordance > 0.9)
+conc_cases.mx <- matrix(nrow=0, ncol=4)
+c("sample_1","sample_2","count","concordance") -> colnames(conc_cases.mx)
+for(sample_1 in rownames(conc.mx)){
+  for(sample_2 in colnames(conc.mx)){
+    if(sample_1!=sample_2 & conc.mx[sample_1,sample_2] > 0.9 ){
+      conc_cases.mx <- rbind(conc_cases.mx, c(sample_1,sample_2,
+                                              cnts.mx[sample_1,sample_2],
+                                              conc.mx[sample_1,sample_2]))
+    }
+  }
+}
+
+# Check result
+conc_cases.mx
+
+# Heatmaps
+heatmap(conc.mx, Rowv=NA, Colv=NA, scale='none', 
+        col = cm.colors(256), labRow=NA, labCol = NA,
+        main="Cases concordance (common variants)")
+
+heatmap(conc.mx, scale='none', 
+        col = cm.colors(256), labRow=NA, labCol = NA,
+        main="Cases concordance (common variants, clustered)")
+
+# Clean-up
+rm(sample_1, sample_2)
+
+```
+
+# Check phenotypes annotations in concordant cases  
+
+## Expected duplicates  
+
+Phenotype records for expected duplicates are identical,  
+except for one case, which is intentionally used twice in different capacities  
+(once as case and once as control)  
+
+```{r expected_duplicates}
+
+dim(phenotypes.df)
+colnames(phenotypes.df)
+
+x <- phenotypes.df["40_S189_L007",] != phenotypes.df["41_S328_L008",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+x <- phenotypes.df["76_S299_L008",] != phenotypes.df["77_S370_L008",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+x <- phenotypes.df["234_S381_L008",] != phenotypes.df["235_S535_L008",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+x <- phenotypes.df["244_S175_L007",] != phenotypes.df["245_S59_L007",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+x <- phenotypes.df["280_S173_L007",] != phenotypes.df["281_S185_L007",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+phenotypes.df[c("280_S173_L007","281_S185_L007"),x] 
+# cc and rstime differ because used in different capacity for different pairs
+# **both samples should be keept in analysis**  
+
+x <- phenotypes.df["347_S36_L007",] != phenotypes.df["348_S17_L007",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+ 
+x <- phenotypes.df["398_S161_L007",] != phenotypes.df["399_S255_L007",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+ 
+x <- phenotypes.df["436_S178_L007",] != phenotypes.df["437_S177_L007",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+x <- phenotypes.df["517_S450_L008",] != phenotypes.df["518_S384_L008",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+x <- phenotypes.df["527_S233_L007",] != phenotypes.df["528_S275_L008",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+x <- phenotypes.df["539_S288_L008",] != phenotypes.df["540_S461_L008",]
+sum(x[5:24]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+
+```
+
+## Unexpected duplicates
+
+Cases in these pairs have very different ages and phenotypes; so it could not be the same sample  
+
+```{r unexpected_duplicates}
+
+x <- phenotypes.df["270_S70_L007",] != phenotypes.df["351_S71_L007",]
+sum(x[5:21]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+phenotypes.df[c("270_S70_L007","351_S71_L007"),x] 
+
+x <- phenotypes.df["386_S273_L008",] != phenotypes.df["391_S376_L008",]
+sum(x[5:21]) # exclude long_ids illumina_id illumina_lane Sample_num fields
+phenotypes.df[c("386_S273_L008","391_S376_L008"),x] 
+
+rm(x)
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

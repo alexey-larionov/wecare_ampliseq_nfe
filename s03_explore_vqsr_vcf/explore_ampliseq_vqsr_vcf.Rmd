@@ -1,0 +1,268 @@
+---
+title: "Explore VQSR VCF"
+author: "Alexey Larionov"
+date: "15/03/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL13Aug2018  
+last updated: AL15Mar2019  
+
+# Summary  
+
+Read vcf to R (12,902 variants x 739 cases) and explore selected QC metrics    
+
+Exploration shows that:
+
+Before filtering, Ampliseq raw vcf has much more variants than raw WES vcf: ~13k vs ~4.5 k  
+
+applying filters used in WES (DP>10 x samples & PASS) + remove over-covered variants (avg DP > 100,000)    
+preserves ~50% of variants (~7k), which is still much more than the num of vars in the filtered WES data (~3.5k)  
+
+Filtering by QUAL is compromised by inverse relation of QUAL and Ts/Tv (in bcftools stats results).  
+However, it may be explored later if necessary: it might remove another ~50% of variants  
+(disproportionaly higher than ~10% in WES).  
+
+VQSRLOD threshold for PASS looks reasonable.  
+
+As in WES data, missingness of genotypes is higher in NFE than in WECARE.  
+This will be dealt with later.  
+
+Suggested hard filters at this stage:  
+
+- Average DP > 10x num samples  
+- Average DP < 100,000  
+- VQSR PASS  
+
+# Start section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+# eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+library(vcfR) # for reading VCF
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/analysis4/s03_explore_vqsr_vcf"
+setwd(base_folder)
+
+opts_knit$set(root.dir = base_folder)
+options(stringsAsFactors = F,
+        warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# Read vcfr  
+
+```{r read_vcfr}
+
+# Source VCF
+vcf_file=paste(base_folder, "ampliseq_nfe_vqsr.vcf", sep="/")
+
+# Read vcf to vcfR object
+vcfr <- read.vcfR(vcf_file)
+
+# Clean-up
+rm(vcf_file)
+
+```
+
+# Extract meta and fixed
+
+```{r extract_meta_and_fixed}
+
+# Get data from header and fixed columns
+meta_fix <- vcfR2tidy(vcfr, info_only=T)
+    
+# Get data frame with meta-information from vcf header
+meta.df <- meta_fix$meta
+dim(meta.df)
+meta.df
+
+# Get data frame with fixed columns (including parsed INFO, convert tibble to data-frame)
+fixed.df <- as.data.frame(meta_fix$fix)
+dim(fixed.df)
+colnames(fixed.df)
+fixed.df[1:5,1:7]
+
+# Clean-up
+rm(meta_fix)
+
+```
+
+# Extract gt matrix
+
+```{r extract_gt}
+
+# Genotypes matrix with numeric representation of alleles
+gt_num.mx <- extract.gt(vcfr) # original numeric codes: 0/1, 1/1 etc
+dim(gt_num.mx)
+gt_num.mx[1:5,6:10]
+sum(is.na(gt_num.mx))
+sum(!is.na(gt_num.mx))
+sum(is.na(gt_num.mx))/sum(!is.na(gt_num.mx))
+
+# Clean-up
+rm(vcfr)
+
+```
+
+# Explore missed values in standard VEP fileds
+
+```{r check_blanks}
+
+# Count missed values
+sum(is.na(fixed.df))
+sum(fixed.df == "", na.rm=T)
+sum(fixed.df == ".", na.rm=T)
+
+# Function to check for blanks in a vector
+sum_na.udf <- function(x){sum(is.na(x))}
+
+# Look up columns that contain blanks
+x <- apply(fixed.df,2,sum_na.udf)
+names(x) <- colnames(fixed.df)
+x[x>0]
+
+# A uniform field (Were any of the samples downsampled?)
+table(fixed.df$DS)
+
+# Remove empty and uniform fields
+fixed.df <- fixed.df %>% 
+  select(-ID, -END, -HaplotypeScore, -VQSLOD, -culprit, -DS)
+
+# Clean-up
+rm(x, sum_na.udf)
+
+```
+
+Compare missed genotypes in Ampliseq and NFE
+
+```{r compare_missed_gt_between_nfe_and_ampliseq}
+
+head(colnames(gt_num.mx))
+tail(colnames(gt_num.mx))
+
+colnames(gt_num.mx)[541:542]
+dim(gt_num.mx)
+
+gt_ampliseq.df <- gt_num.mx[,1:541]
+gt_nfe.df <- gt_num.mx[,542:739]
+
+sum(is.na(gt_ampliseq.df)/(nrow(gt_ampliseq.df)*ncol(gt_ampliseq.df))) # length(gt_ampliseq.df) could be used
+sum(is.na(gt_nfe.df)/length(gt_nfe.df))
+
+rm(gt_ampliseq.df, gt_nfe.df)
+
+```
+
+# FILTER
+
+```{r filter}
+
+table(fixed.df$FILTER)
+sum((fixed.df$FILTER=="PASS"))/length(fixed.df$FILTER)
+
+```
+
+# QUAL
+
+```{r qual}
+
+hist(fixed.df$QUAL)
+hist(fixed.df$QUAL[fixed.df$QUAL<1000])
+hist(fixed.df$QUAL[fixed.df$QUAL<200], lab=T, ylim=c(0,1500))
+
+sum(fixed.df$QUAL < 150)/length(fixed.df$QUAL)
+
+```
+
+# DP
+
+```{r dp}
+
+hist(fixed.df$DP)
+hist(fixed.df$DP[fixed.df$DP<100000])
+
+sum(fixed.df$DP < 7390)/length(fixed.df$DP)
+
+sum(fixed.df$DP >= 7390 & fixed.df$FILTER=="PASS" )/length(fixed.df$DP)
+sum(fixed.df$DP >= 7390 & fixed.df$FILTER=="PASS" )
+
+max(fixed.df$DP)
+sum(fixed.df$DP > 100000 & fixed.df$FILTER=="PASS" )/length(fixed.df$DP)
+sum(fixed.df$DP > 100000 & fixed.df$FILTER=="PASS" )
+
+sum(fixed.df$DP >= 7390 & fixed.df$FILTER=="PASS" & fixed.df$DP < 100000)
+
+```
+
+# VQSLOD
+
+```{r vqslod}
+
+sum(is.na(fixed.df$AS_VQSLOD))
+vqslod <- as.numeric(fixed.df$AS_VQSLOD)
+sum(is.na(vqslod))
+
+hist(vqslod)
+max(vqslod, na.rm=T)
+
+hist(vqslod[vqslod > -25], breaks=100)
+
+min(vqslod[fixed.df$FILTER=="PASS"], na.rm=T)
+max(vqslod[fixed.df$FILTER=="PASS"], na.rm=T)
+
+abline(v=0.9, col="Red", lty=2)
+
+rm(vqslod)
+
+```
+
+# Save results
+
+```{r save_results}
+
+save.image(paste(base_folder, "explore_ampliseq_vqsr_vcf.RData", sep="/"))
+
+```
+
+# Final section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

@@ -1,0 +1,199 @@
+---
+title: "Check refs"
+author: "Alexey Larionov"
+date: "01/03/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+Sys.time()
+```
+
+
+# Read data
+
+```{r read_data}
+
+setwd("/Users/alexey/Documents/wecare/ampliseq/analysis4/check_ref_alleles")
+
+set1.df <- read.table("set1.txt", header=T)
+set2.df <- read.table("set2.txt", header=T)
+ampliseq.df <- read.table("ampliseq.txt", header=T)
+
+set1.df <- set1.df[,-3]
+set2.df <- set2.df[,-3]
+ampliseq.df <- ampliseq.df[,-3]
+
+```
+
+# Check source data
+
+```{r check_source}
+
+dim(set1.df)
+dim(set2.df)
+dim(ampliseq.df)
+
+head(set1.df)
+tail(set1.df)
+
+head(set2.df)
+tail(set2.df)
+
+head(ampliseq.df)
+tail(ampliseq.df)
+
+```
+
+# Update data
+
+```{r update}
+
+set1_locations <- paste(set1.df$CHROM, set1.df$POS, sep="_")
+set2_locations <- paste(set2.df$CHROM, set2.df$POS, sep="_")
+ampliseq_locations <- paste(ampliseq.df$CHROM, ampliseq.df$POS, sep="_")
+
+length(set1_locations)
+length(set2_locations)
+length(ampliseq_locations)
+
+set1_in_ampliseq <- set1_locations %in% ampliseq_locations
+set2_in_ampliseq <- set2_locations %in% ampliseq_locations
+
+sum(set1_in_ampliseq)
+sum(set2_in_ampliseq)
+
+set1.df <- set1.df[set1_in_ampliseq,]
+set2.df <- set2.df[set2_in_ampliseq,]
+
+set1_locations <- paste(set1.df$CHROM, set1.df$POS, sep="_")
+set2_locations <- paste(set2.df$CHROM, set2.df$POS, sep="_")
+
+set1_locations -> rownames(set1.df)
+set2_locations -> rownames(set2.df)
+ampliseq_locations -> rownames(ampliseq.df)
+
+str(set1.df)
+str(set2.df)
+str(ampliseq.df)
+
+set1.df$CHROM <- as.vector(set1.df$CHROM)
+set1.df$REF <- as.vector(set1.df$REF)
+
+set2.df$CHROM <- as.vector(set2.df$CHROM)
+set2.df$REF <- as.vector(set2.df$REF)
+
+ampliseq.df$CHROM <- as.vector(ampliseq.df$CHROM)
+ampliseq.df$REF <- as.vector(ampliseq.df$REF)
+
+str(set1.df)
+str(set2.df)
+str(ampliseq.df)
+
+rm(set1_locations, set2_locations, set1_in_ampliseq, set2_in_ampliseq, 
+   set1_locations, set2_locations, ampliseq_locations)
+
+```
+
+# Check updated data
+
+```{r check_updated}
+
+dim(set1.df)
+dim(set2.df)
+dim(ampliseq.df)
+
+head(set1.df)
+tail(set1.df)
+
+head(set2.df)
+tail(set2.df)
+
+head(ampliseq.df)
+tail(ampliseq.df)
+
+```
+
+# Wrong references in set1
+
+```{r wrong_ref_set1}
+
+ampliseq_in_set1.df <- ampliseq.df[rownames(set1.df),]
+smpliseq_and_set1.df <- data.frame(ampliseq_in_set1.df,set1.df)
+
+colnames(smpliseq_and_set1.df) <- 
+  c("ampliseq_chr","ampliseq_pos","ampliseq_ref","set1_chr","set1_pos","set1_ref")
+
+head(smpliseq_and_set1.df)
+
+sum(smpliseq_and_set1.df$ampliseq_chr != smpliseq_and_set1.df$set1_chr)
+sum(smpliseq_and_set1.df$ampliseq_pos != smpliseq_and_set1.df$set1_pos)
+
+discrepant_set1 <- smpliseq_and_set1.df$ampliseq_ref != smpliseq_and_set1.df$set1_ref
+sum(discrepant_set1)
+
+head(smpliseq_and_set1.df[discrepant_set1,])
+tail(smpliseq_and_set1.df[discrepant_set1,])
+
+same_nchar_set1 <- nchar(smpliseq_and_set1.df$ampliseq_ref) == nchar(smpliseq_and_set1.df$set1_ref)
+sum(same_nchar_set1)
+
+wrong_set1 <- discrepant_set1 & same_nchar_set1
+
+sum(wrong_set1)
+
+smpliseq_and_set1.df[wrong_set1,]
+
+sum(wrong_set1)/nrow(smpliseq_and_set1.df)
+
+rm(ampliseq_in_set1.df, discrepant_set1, same_nchar_set1, wrong_set1)
+
+```
+
+# Wrong references in set2
+
+```{r wrong_ref_set2}
+
+ampliseq_in_set2.df <- ampliseq.df[rownames(set2.df),]
+smpliseq_and_set2.df <- data.frame(ampliseq_in_set2.df,set2.df)
+
+colnames(smpliseq_and_set2.df) <- 
+  c("ampliseq_chr","ampliseq_pos","ampliseq_ref","set2_chr","set2_pos","set2_ref")
+
+head(smpliseq_and_set2.df)
+
+sum(smpliseq_and_set2.df$ampliseq_chr != smpliseq_and_set2.df$set2_chr)
+sum(smpliseq_and_set2.df$ampliseq_pos != smpliseq_and_set2.df$set2_pos)
+
+discrepant_set2 <- smpliseq_and_set2.df$ampliseq_ref != smpliseq_and_set2.df$set2_ref
+sum(discrepant_set2)
+
+head(smpliseq_and_set2.df[discrepant_set2,])
+tail(smpliseq_and_set2.df[discrepant_set2,])
+
+same_nchar_set2 <- nchar(smpliseq_and_set2.df$ampliseq_ref) == nchar(smpliseq_and_set2.df$set2_ref)
+sum(same_nchar_set2)
+
+wrong_set2 <- discrepant_set2 & same_nchar_set2
+
+sum(wrong_set2)
+
+smpliseq_and_set2.df[wrong_set2,]
+
+sum(wrong_set2)/nrow(smpliseq_and_set2.df)
+
+rm(ampliseq_in_set2.df, discrepant_set2, same_nchar_set2, wrong_set2)
+
+```
+
+```{r save}
+
+save.image(file="check_refs.RData")
+
+```
+
+```{r}
+Sys.time()
+```

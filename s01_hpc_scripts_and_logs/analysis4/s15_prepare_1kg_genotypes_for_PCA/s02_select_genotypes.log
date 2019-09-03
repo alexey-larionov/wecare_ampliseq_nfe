@@ -1,0 +1,82 @@
+Job id: 11078745
+Job name: s02_select_genotypes
+Allocated node: cpu-e-234
+Time: Sat 27 Apr 22:28:28 BST 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s15_prepare_1kg_genotypes_for_PCA
+
+------------------ Output ------------------
+
+Select 1,145 genotypes from 1kg for joined PCA plot
+Sat 27 Apr 22:28:28 BST 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s15_prepare_1kg_genotypes_for_PCA
+
+source_1145_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/sites_1kg_1850_intersect.vcf.gz
+compressed_1kg_folder: /rds/project/erf33/rds-erf33-medgen/resources/phase3_1k_release20130502/vcfs_fixed_compressed
+target_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/by_chromosome
+
+--- Resources ---
+
+source_1kg_folder: /rds/project/erf33/rds-erf33-medgen/resources/phase3_1k_release20130502/vcfs_fixed
+
+--- Tools ---
+
+bcftools: /rds/project/erf33/rds-erf33-medgen/tools/bcftools/bcftools-1.8/bin/bcftools
+
+Compressing and indexing source files ...
+chr1
+chr2
+chr3
+chr4
+chr5
+chr6
+chr7
+chr8
+chr9
+chr10
+chr11
+chr12
+chr13
+chr14
+chr15
+chr16
+chr17
+chr18
+chr19
+chr20
+chr21
+chr22
+Sun 28 Apr 04:39:53 BST 2019
+
+Looking for the intesects ...
+chr1	101
+chr2	55
+chr3	85
+chr4	76
+chr5	14
+chr6	37
+chr7	14
+chr8	18
+chr9	58
+chr10	64
+chr11	60
+chr12	48
+chr13	137
+chr14	18
+chr15	30
+chr16	127
+chr17	123
+chr18	26
+chr19	18
+chr20	0
+chr21	2
+chr22	29
+
+Done
+Sun 28 Apr 07:25:19 BST 2019
+
+slurmstepd: error: Exceeded step memory limit at some point.

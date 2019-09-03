@@ -1,0 +1,10 @@
+.DS_Store
+*.vcf
+*.idx
+*.lfidx
+*.bam
+*.bai
+*.csv
+*.bed
+set1.txt
+set2.txt 

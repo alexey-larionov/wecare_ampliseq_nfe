@@ -1,0 +1,379 @@
+---
+title: "mass_polr_wecare_nfe"
+output: html_document
+---
+
+started: Alexey Larionov, 27Feb2017  
+last updated: Alexey Larionov, 25Oct2017  
+
+# Summary
+
+Reads and checks data.  
+Data are already inveted, imputed, weighted and aggregated per gene.  
+
+Performs trend test for NFE < UBC < CBC using polr function from MASS library  
+Writes results into a text file, then explored this file.  
+
+This is a trend test within regression framework using proportional odds regression model.  
+Thus, it allows all the covariates etc as was used in UBC vs CBC SKAT analysis.  
+
+Polr or multinomial-lr were advised by David Conti (e-mail of 18Nov2016).  
+Initially, I tested both.  Then I excluded multinomuial because was messy and,  
+in general, multinomial is less sensitive/suitable for ordered categories.  
+
+##Input & output data:  
+- 10,297 vars x 672 samples (198 nfe + 242 ubc and 232 cbc)  
+- 5,455 genes x 672 cases (198 NFE + 242 UBC + 232 CBC)  
+
+# start_section
+
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clenan-up
+rm(list=ls())
+
+# Base folder
+library(knitr)
+base_folder="/analysis/mtgroup_share/users/alexey/final_wecare_analysis/wecare_nfe_10.17"
+opts_knit$set(root.dir = base_folder)
+#setwd(base_folder)
+
+# Libraries
+library(MASS) # for proportional odds regression (polr)
+library(dplyr)
+
+# Accessory functions
+source(paste(base_folder, "scripts", "f02_advTryCatch.R", sep="/"))
+source(paste(base_folder, "scripts", "f03_qqunif_plot.R", sep="/"))
+
+```
+
+# load_data
+
+```{r load_data}
+
+load(paste(base_folder, "results", "r07_invert_impute_weight_aggregate_wecare_nfe.RData", sep="/"))
+
+```
+
+# check_data
+
+```{r check_data}
+
+ls()
+
+dim(genotypes.mx)
+class(genotypes.mx)
+genotypes.mx[1:5,1:5]
+
+dim(genotypes_inv_imp_wt.mx)
+class(genotypes_inv_imp_wt.mx)
+genotypes_inv_imp_wt.mx[1:5,1:5]
+
+dim(genes_aggr_data.mx)
+class(genes_aggr_data.mx)
+genes_aggr_data.mx[1:5,1:5]
+
+dim(genes_aggr_info.df)
+str(genes_aggr_info.df)
+genes_aggr_info.df[1:5,1:7]
+
+dim(kgen.df)
+colnames(kgen.df)
+kgen.df[1:5,1:5]
+
+dim(exac.df)
+colnames(exac.df)
+exac.df[1:5,1:5]
+
+dim(variants.df)
+str(variants.df)
+variants.df[1:5,1:5]
+
+dim(phenotypes.df)
+str(phenotypes.df)
+phenotypes.df[1:5,1:5]
+
+# Check consistency of rownames and colnames
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(colnames(genes_aggr_data.mx) != rownames(phenotypes.df))
+sum(rownames(genes_aggr_info.df) != rownames(genes_aggr_data.mx))
+
+sum(rownames(genotypes.mx) != rownames(genotypes_inv_imp_wt.mx))
+sum(rownames(genotypes.mx) != rownames(kgen.df))
+sum(rownames(genotypes.mx) != rownames(exac.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# prepare_data_for_analysis
+
+```{r prepare_data_for_analysis}
+
+# Eigenvectors
+E <- as.matrix(phenotypes.df[,c("eig1", "eig2")])  
+str(E)
+E[1:5,]
+sum(is.na(E)) # 0
+
+# Outcomes
+Y <- phenotypes.df$cc + 2 # shift [-1,0,1] to [1,2,3] - natural numbers may better fit to ordered factors later  
+table(Y)
+Y <- ordered(Y, levels=c(1,2,3), labels=c("nfe", "ubc", "cbc")) # convert to ordered factor
+names(Y) <- as.vector(phenotypes.df$wes_id) # add names (just in case)
+str(Y)
+table(Y)
+Y[c(1,300,500)]
+sum(is.na(Y)) # 0
+
+# Genes
+genes <- genes_aggr_info.df$gene
+length(genes) # 5,455
+genes[1:5]
+sum(is.na(genes)) # 0
+
+# Null model: generated witout error or warning
+try.polr.null <- advTryCatch(polr(Y ~ E))
+try.polr.null$status # "succeeded"
+# The result is saved in try.polr.null$value
+
+# Check that ther is no missed data
+sum(is.na(genes_aggr_data.mx)) # 0
+
+```
+
+# polr
+
+Loop through each gene, perform polr analyses and write results to text table  
+Errors and warnings are handled with a custom error handling function advTryCatch() 
+
+Takes ~5 min
+
+```{r polr}
+
+# Prepare empty matrix for results
+results.mx <- matrix(ncol = 4, nrow = 0)
+colnames(results.mx) <- c("gene", "status", "message", "polr_p")
+
+# --- Loop through each gene --- #
+
+for(gene in genes){
+ 
+  # Initialise result values
+  status <- NA
+  message <- NA
+  polr_p <- NA
+
+  # Get the predictive variable
+  X <- genes_aggr_data.mx[gene,]
+
+  # ----- Try computing regression model ----- #
+  # advTryCatch provides advanced errors/warnings handling
+  # The returned value is a list of 3 objects:
+  # $value: the function's output for success or warning; NA for error
+  # $status: succeeded/error/warning
+  # $message: for error or warning, NA for success
+  try.polr <- advTryCatch(polr(Y ~ X + E))
+  
+  # Get info about succss/warning/error
+  status <- try.polr$status
+  
+  # On error
+  if(status == "error"){
+    
+    # Catch error message
+    message <- try.polr$message$message
+    
+    # Write result
+    results.mx <- rbind(results.mx, c(gene, status, message, polr_p))
+    
+    # Next gene
+    next
+    
+  }
+  
+  # On warning
+  if(status == "warning") {
+    
+    # Catch warning message
+    message <- try.polr$message$message
+    
+  }
+  
+  # Compute polr p-value
+  polr_p <- anova(try.polr.null$value, try.polr$value)["2","Pr(Chi)"]
+  
+  # Write result
+  results.mx <- rbind(results.mx, c(gene, status, message, polr_p))
+
+} # next gene
+
+# Clean-up
+rm(gene, genes, try.polr.null, try.polr, status, message, polr_p, X, Y, E, advTryCatch)
+
+```
+
+# explore_results
+
+```{r explore_results}
+
+# --- Convert to dataframe --- #
+
+results.df <- as.data.frame(results.mx)
+results.df$polr_p <- as.numeric(as.vector(results.df$polr_p))
+rownames(results.df) <- results.df$gene
+
+# Count errors, warnings and non-error p=0
+summary(results.df$status)
+
+errors <- results.df[results.df$status == "error","message"]
+table(errors)
+
+warnings <- results.df[results.df$status == "warning","message"]
+table(warnings)
+
+sum(is.na(results.df$polr_p)) # 188
+
+x <- results.df$polr_p == 0 & !is.na(results.df$polr_p)
+sum(x) # 6
+results.df[x,]
+
+# --- Look at the top genes --- #
+#(yet without direction etc)
+
+y <- results.df[results.df$status == "succeeded",]
+y <- y[order(y$polr_p),]
+sum(y$polr_p < 0.01)
+sum(y$polr_p < 0.05)
+y[y$polr_p < 0.05,]
+
+# --- Look at selected genes --- #
+
+poster_genes <- c("ATM", "CHEK2", "NF1", "FOXM1", "NRG1", "SLC9A3R1", "ERCC6")
+draft_genes <- c("ATM", "CHEK2", "SLC9A3R1","FOXM1", "LRRK2", "ALK", "CYP2D6", "MYBBP1A", "CENPF", "PRKD1", "RB1CC1", "PTPN12", "HOXD13")
+
+results.df[poster_genes, ]
+results.df[draft_genes, ]
+
+# --- Prepare data for qq plots --- #
+
+all_p_values <- results.df$polr_p # 5,455
+selected_genes <- !is.na(all_p_values) & all_p_values != 0 
+sum(selected_genes) # 5,261 : w/o 188 errors and 6 zeroes (all zeroes with warnings)
+
+obs_p_values <- results.df$polr_p[selected_genes]
+obs_status <- results.df$status[selected_genes]
+
+color_codes <- rep("blue", length(obs_status))
+"red" -> color_codes[obs_status != "succeeded"]
+summary(as.factor(color_codes))
+
+# p values under the flat expectation
+exp_p_values<-(rank(obs_p_values,ties.method="first")+0.5)/(length(obs_p_values)+1) 
+
+# --- Manual QQ plot --- #
+
+plot(-log10(exp_p_values), -log10(obs_p_values), 
+     col = color_codes, 
+     main="QQ plot for polr_LRT (5,261 genes)\nred = glm.fit warning")
+abline(0,1,col="red")
+
+# --- Make QQ plot with qqunif --- #
+
+# All selected genes
+qqunif.plot(obs_p_values, col=color_codes, should.thin=F, main="QQ plot for polr_LRT (5,261 genes)\nred = glm.fit warning")
+
+# Remove genes with glm.fit warnings
+succeeded_pvalues <- obs_p_values[obs_status == "succeeded"]
+length(succeeded_pvalues) # 4,329
+
+# Look at the genes with succeeded polr only
+qqunif.plot(succeeded_pvalues, should.thin=F, main="QQ plot for polr_LRT (4,329)\nw/o glm.fit warnings")
+
+# --- Clean-up --- #
+
+rm(qqunif.plot, color_codes, poster_genes, draft_genes, errors, warnings, 
+   all_p_values, selected_genes, obs_p_values, obs_status, exp_p_values, succeeded_pvalues, results.mx, x, y) 
+
+```
+
+# data_summary
+
+```{r data_summary}
+
+ls()
+
+dim(genotypes.mx)
+class(genotypes.mx)
+genotypes.mx[1:5,1:5]
+
+dim(genotypes_inv_imp_wt.mx)
+class(genotypes_inv_imp_wt.mx)
+genotypes_inv_imp_wt.mx[1:5,1:5]
+
+dim(genes_aggr_data.mx)
+class(genes_aggr_data.mx)
+genes_aggr_data.mx[1:5,1:5]
+
+dim(genes_aggr_info.df)
+str(genes_aggr_info.df)
+genes_aggr_info.df[1:5,1:7]
+
+dim(results.df)
+str(results.df)
+results.df[1:5,]
+
+dim(kgen.df)
+colnames(kgen.df)
+kgen.df[1:5,1:5]
+
+dim(exac.df)
+colnames(exac.df)
+exac.df[1:5,1:5]
+
+dim(variants.df)
+str(variants.df)
+variants.df[1:5,1:5]
+
+dim(phenotypes.df)
+str(phenotypes.df)
+phenotypes.df[1:5,1:5]
+
+# Check consistency of rownames and colnames
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(colnames(genes_aggr_data.mx) != rownames(phenotypes.df))
+
+sum(rownames(genes_aggr_info.df) != rownames(genes_aggr_data.mx))
+sum(rownames(results.df) != rownames(genes_aggr_data.mx))
+
+sum(rownames(genotypes.mx) != rownames(genotypes_inv_imp_wt.mx))
+sum(rownames(genotypes.mx) != rownames(kgen.df))
+sum(rownames(genotypes.mx) != rownames(exac.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# save_data
+
+```{r save_data}
+
+# Save polr results in text file
+write.table(results.df, file=paste(base_folder, "results", "r08_mass_polr.txt", sep="/"), quote=FALSE, sep="\t")
+
+# Save image
+save.image(paste(base_folder, "results", "r08_mass_polr_wecare_nfe.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

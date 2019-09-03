@@ -1,0 +1,207 @@
+---
+title: "s02_remove_duplicates"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL10Dec2018  
+last updated: AL24Apr2019  
+
+# Summary  
+
+Remove intended duplicates detected earlier.  
+Of each pair, remove the sample with smaller number of reads  
+(see read numbers in Excel file of 14Aug2018)  
+
+Removed 10 intentional duplicates:  
+40_S189_L007  
+76_S299_L008  
+234_S381_L008  
+244_S175_L007  
+348_S17_L007  
+398_S161_L007  
+436_S178_L007  
+518_S384_L008  
+527_S233_L007  
+539_S288_L008  
+
+Keep both samples in this pair: 280_S173_L007 - 281_S185_L007  
+Because this represents the same sample included twice:  
+once as case, and once as control (e-mail from Xiaolin of   29Aug2018)  
+
+Remove all 4 mixed-up samples:  
+270_S70_L007 - 351_S71_L007  
+386_S273_L008 - 391_S376_L008  
+
+Remove 13 variants with uniform genotypes after the removal of samples.  
+
+Input data: 1,878 vars x 732 samples ( 535BC = 265UBC + 270CBC and 197NFE)  
+Output data: 1,865 vars x 718 samples ( 521BC = 260UBC + 261CBC and 197NFE)  
+
+# start section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+# eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
+opts_knit$set(root.dir = base_folder)
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read data
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s09_add_phenotypes"
+load(paste(source_folder, "s01_add_phenotypes.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
+rm(source_folder)
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# Make lists of removed and retained samples  
+
+14 samples to remove:  
+- 10 intended duplicates to remove  
+- 4 samples mixed-up during pipetting  
+
+```{r sample_lists}
+
+all_samples <- colnames(genotypes.mx)
+excluded_samples <- c("40_S189_L007","76_S299_L008","234_S381_L008",
+                      "244_S175_L007","348_S17_L007","398_S161_L007",
+                      "436_S178_L007","518_S384_L008","527_S233_L007",
+                      "539_S288_L008","270_S70_L007","351_S71_L007",
+                      "386_S273_L008","391_S376_L008")
+retained_samples <- ! all_samples %in% excluded_samples
+
+length(all_samples)
+length(excluded_samples)
+sum(retained_samples)
+
+rm(all_samples, retained_samples)
+
+```
+
+# Remove duplicated and mixed samples  
+
+```{r remove_samples}
+
+genotypes.mx <- genotypes.mx[,!colnames(genotypes.mx) %in% excluded_samples]
+phenotypes.df <- phenotypes.df[!rownames(phenotypes.df) %in% excluded_samples,]
+
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+dim(genotypes.mx)
+dim(phenotypes.df)
+
+rm(excluded_samples)
+
+```
+
+# Update variants  
+
+Check for variants with uniform genotypes  
+(could be produced after removal of samples)  
+
+Remove such uniform variants  
+
+```{r uniform_genotypes}
+
+# Function to detect uniform numeric vectors
+uniform.udf <- function(x){min(x,na.rm=T) == max(x,na.rm=T)}
+
+# Make the filter
+uniform_vars <- apply(genotypes.mx,1,uniform.udf)
+sum(uniform_vars)
+
+# Apply filter
+variants.df <- variants.df[!uniform_vars,]
+genotypes.mx <- genotypes.mx[!uniform_vars,]
+
+sum(rownames(genotypes.mx) != rownames(variants.df))
+dim(genotypes.mx)
+dim(variants.df)
+
+table(phenotypes.df$cc)
+
+# Clean-up (keep hwe and vars_bi.df)
+rm(uniform.udf, uniform_vars)
+
+```
+
+# Check data
+
+```{r end_check}
+
+ls()
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# save_results
+
+```{r save_results}
+
+save.image(paste(base_folder, "s02_remove_duplicates.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

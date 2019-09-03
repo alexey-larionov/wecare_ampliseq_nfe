@@ -1,0 +1,53 @@
+Job id: 10043253
+Job name: s01_split_MA
+Allocated node: cpu-e-207
+Time: Mon 18 Mar 14:51:59 GMT 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s13_split_MA
+
+------------------ Output ------------------
+
+Split MA, clean split VCF add VarIDs
+Mon 18 Mar 14:51:59 GMT 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s13_split_MA
+
+source_vcf: 
+target_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s13_split_MA/ampliseq_nfe_locID_MAflag_vqsr_hf_MAsplit.vcf
+
+--- Tools ---
+
+gatk: /rds/project/erf33/rds-erf33-medgen/tools/gatk/gatk-3.7-0/GenomeAnalysisTK.jar
+java: /rds/project/erf33/rds-erf33-medgen/tools/java/jre1.8.0_40/bin/java
+
+--- Resources ---
+
+ref_genome: /rds/project/erf33/rds-erf33-medgen/resources/gatk_bundle/b37/decompressed/human_g1k_v37.fasta
+targets_interval_list: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s00_targets/ampliseq_targets_b37.interval_list
+
+--- Settings ---
+
+MIN_DP: 
+
+Splitting multiallelic variants
+Num of variants before splitting:
+12902
+
+Num of variants after splitting: 
+13602
+
+Cleaning vcf after splitting multiallelic variants
+
+Num of variants after removing * in ALT: 
+13336
+
+Num of variants after removing ones w/o AN/AC in INFO: 
+13046
+
+Adding split variants IDs to INFO field ...
+Done
+Mon 18 Mar 14:52:25 GMT 2019
+

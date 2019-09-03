@@ -1,0 +1,38 @@
+Job id: 10043259
+Job name: s01_annotate_with_KGEN_and_EXAC
+Allocated node: cpu-e-130
+Time: Mon 18 Mar 14:54:15 GMT 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s14_annotate
+
+------------------ Output ------------------
+
+Annotate with KGEN and EXAC
+Mon 18 Mar 14:54:15 GMT 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s14_annotate
+
+source_vcf: 
+target_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s14_annotated_vcf/ampliseq_nfe_locID_MAflag_vqsr_hf_MAsplit_kgen_exac.vcf
+
+--- Tools ---
+
+gatk: /rds/project/erf33/rds-erf33-medgen/tools/gatk/gatk-3.7-0/GenomeAnalysisTK.jar
+java: /rds/project/erf33/rds-erf33-medgen/tools/java/jre1.8.0_40/bin/java
+
+--- Resources ---
+
+ref_genome: /rds/project/erf33/rds-erf33-medgen/resources/gatk_bundle/b37/decompressed/human_g1k_v37.fasta
+targets_interval_list: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s00_targets/ampliseq_targets_b37.interval_list
+dbsnp_138: /rds/project/erf33/rds-erf33-medgen/resources/gatk_bundle/b37/decompressed/dbsnp_138.b37.vcf
+kgen_sites_vcf: /rds/project/erf33/rds-erf33-medgen/resources/phase3_1k_release20130502/wes_pipeline_v01.17/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5a.20130502.sites.fixed.filt.biallelic.leftaligned.vcf
+exac_sites_vcf: /rds/project/erf33/rds-erf33-medgen/resources/exac/wes_pipeline_v01.17/ExAC_nonTCGA.r0.3.1.sites.vep.filt.biallelic.leftaligned.vcf.gz
+
+Adding data from kgen (ph3, b37)...
+Adding data from exac (non-tcga, b37) and IDs from dbSNP_138...
+Done
+Mon 18 Mar 14:55:43 GMT 2019
+

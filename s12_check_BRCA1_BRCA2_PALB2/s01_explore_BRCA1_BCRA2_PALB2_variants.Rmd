@@ -1,0 +1,261 @@
+---
+title: "s01_explore_BRCA1_BCRA2_PALB2_variants"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL25Sep2018  
+last updated: AL25Apr2019  
+
+# Summary  
+
+Extract protein-affecting variants in BRCA1/2 and PALB2:  
+LoF or Deleterious+Damaging missences or known pathogenic (VEP ClinSig).  
+Export to text for comparison with Analysis v3 and review in IGV.  
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_check_BRCA1_BRCA2_PALB2"
+
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read_data  
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
+load(paste(source_folder, "s02_remove_duplicates.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_check_BRCA1_BRCA2_PALB2"
+rm(source_folder)
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# Select protein-affecting variants  
+
+Not considering AFs, because they will be evaluated manually  
+
+** !!! Avoid NA in logic indices !!! **
+
+## make_lof_index  
+
+```{r make_lof_index}
+
+sum(is.na(variants.df$Consequence)) # No missed data : no need in tackling NA
+
+splice_acceptor_variant <- grepl( "splice_acceptor_variant", variants.df$Consequence)
+splice_donor_variant <- grepl( "splice_donor_variant", variants.df$Consequence)
+stop_gain <- grepl( "stop_gained", variants.df$Consequence)
+stop_lost <- grepl( "stop_lost", variants.df$Consequence)
+start_lost <- grepl( "start_lost", variants.df$Consequence)
+frameshift_variant <- grepl( "frameshift_variant", variants.df$Consequence)
+high_impact <- variants.df$IMPACT == "HIGH"
+
+lof <- splice_acceptor_variant | splice_donor_variant | stop_gain | stop_lost | start_lost | frameshift_variant | high_impact
+summary(as.factor(lof))
+length(lof)
+
+# Clean-up
+rm(splice_acceptor_variant, splice_donor_variant, 
+   stop_gain, stop_lost, start_lost,
+   frameshift_variant, high_impact)
+
+```
+
+## make_missense_index
+
+```{r make_missense_index}
+
+sum(is.na(variants.df$SIFT_call))
+sum(is.na(variants.df$PolyPhen_call))
+
+deleterious <- variants.df$SIFT_call == "deleterious" & !is.na(variants.df$SIFT_call)
+summary(as.factor(deleterious))
+length(deleterious)
+
+probably_damaging <- variants.df$PolyPhen_call == "probably_damaging" & !is.na(variants.df$PolyPhen_call)
+summary(as.factor(probably_damaging))
+length(probably_damaging)
+
+protein_affecting_missense <- deleterious & probably_damaging
+summary(as.factor(protein_affecting_missense))
+length(protein_affecting_missense)
+
+# Clean-up
+rm(deleterious, probably_damaging)
+
+```
+
+## make_vep_clinsig_index
+
+```{r make_vep_clinsig_index}
+
+sum(is.na(variants.df$CLIN_SIG))
+
+# likely_pathogenic and pathogenic
+pathogenic <- grepl( "pathogenic", variants.df$CLIN_SIG) & !is.na(variants.df$CLIN_SIG)
+summary(as.factor(pathogenic))
+length(pathogenic)
+
+# risk_factor
+risk_factor <- grepl( "risk_factor", variants.df$CLIN_SIG) & !is.na(variants.df$CLIN_SIG)
+summary(as.factor(risk_factor))
+length(risk_factor)
+
+# toal index of vep clinsig
+vep_clinsig <- pathogenic | risk_factor
+summary(as.factor(vep_clinsig))
+length(vep_clinsig)
+
+# Clean-up
+rm(pathogenic, risk_factor)
+
+```
+
+## Cumulative index
+
+```{r cumulative index}
+
+selected_variants <- lof | protein_affecting_missense | vep_clinsig
+summary(as.factor(selected_variants))
+length(selected_variants)
+
+selected_variants.df <- variants.df[selected_variants,]
+dim(selected_variants.df)
+
+rm(selected_variants, lof, protein_affecting_missense, vep_clinsig)
+
+```
+
+# Select most informative fields
+
+```{r select_fields}
+
+selected_fields <- c("SplitVarID", "SYMBOL", "CHROM", "POS", "REF", "ALT", "Multiallelic", 
+                     "Consequence", "IMPACT", "Existing_variation", 
+                     "init_AF", "kgen.EUR_AF", "exac_non_TCGA.AC_NFE", "exac_non_TCGA.AF",
+                     "exac_non_TCGA.AC_NFE", "exac_non_TCGA.AN_NFE", 
+                     
+                     "CLIN_SIG", 
+                     
+                     "cDNA_position", "Codons", "Amino_acids", "Protein_position",  
+                     "SIFT_call", "SIFT_score", "PolyPhen_call","PolyPhen_score")
+
+length(selected_fields)
+
+selected_variants.df <- selected_variants.df[,selected_fields]
+dim(selected_variants.df)
+
+rm(selected_fields)
+
+```
+
+# Select variants in BRCA1, BRCA2 and PALB2
+
+```{r select_variants}
+
+BRCA1_variants <- selected_variants.df$SYMBOL == "BRCA1"
+BRCA2_variants <- selected_variants.df$SYMBOL == "BRCA2"
+PALB2_variants <- selected_variants.df$SYMBOL == "PALB2"
+
+sum(BRCA1_variants)
+sum(BRCA2_variants)
+sum(PALB2_variants)
+
+BRCA1_variants.df <- selected_variants.df[BRCA1_variants,]
+BRCA2_variants.df <- selected_variants.df[BRCA2_variants,]
+PALB2_variants.df <- selected_variants.df[PALB2_variants,]
+
+dim(BRCA1_variants.df)
+dim(BRCA2_variants.df)
+dim(PALB2_variants.df)
+
+BRCA1_BRCA2_PALB2_variants.df <- rbind(BRCA1_variants.df, BRCA2_variants.df, PALB2_variants.df)
+BRCA1_BRCA2_PALB2_high_impact_variants.df <- 
+  BRCA1_BRCA2_PALB2_variants.df[BRCA1_BRCA2_PALB2_variants.df$IMPACT=="HIGH",]
+
+dim(BRCA1_BRCA2_PALB2_variants.df)
+dim(BRCA1_BRCA2_PALB2_high_impact_variants.df)
+
+rm(selected_variants.df, BRCA1_variants, BRCA2_variants, PALB2_variants,
+   BRCA1_variants.df, BRCA2_variants.df, PALB2_variants.df)
+
+```
+
+# Write BRCA1, BRCA2, and PALB2 variants to a text file
+
+```{r write_to_text}
+
+write.table(BRCA1_BRCA2_PALB2_variants.df, 
+            file=paste(base_folder,"s01_BRCA1_BRCA2_PALB2_variants.txt",sep="/"),
+            quote=F, sep="\t", col.names=T, row.names=F)
+
+write.table(BRCA1_BRCA2_PALB2_high_impact_variants.df, 
+            file=paste(base_folder,"s01_BRCA1_BRCA2_PALB2_high_impact_variants.txt",sep="/"),
+            quote=F, sep="\t", col.names=T, row.names=F)
+
+rm(BRCA1_BRCA2_PALB2_variants.df, BRCA1_BRCA2_PALB2_high_impact_variants.df)
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

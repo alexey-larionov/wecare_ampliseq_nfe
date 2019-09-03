@@ -1,0 +1,10 @@
+Making 1850 sites vcf file
+
+header: header.txt
+variants: s01_ampliseq_nfe_1850_vars.txt
+output_vcf: s03_1850_sites.vcf
+
+Adding header to variants ...
+Done
+Fri 26 Apr 2019 18:45:07 BST
+

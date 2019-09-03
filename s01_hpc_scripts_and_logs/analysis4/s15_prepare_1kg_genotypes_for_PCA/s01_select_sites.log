@@ -1,0 +1,37 @@
+Job id: 11048661
+Job name: s01_select_sites
+Allocated node: cpu-e-235
+Time: Fri 26 Apr 22:40:40 BST 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s15_prepare_1kg_genotypes_for_PCA
+
+------------------ Output ------------------
+
+Select overlap between 1,850 sites and 1kg sites for joined PCA plot
+Fri 26 Apr 22:40:40 BST 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s15_prepare_1kg_genotypes_for_PCA
+
+source_1850_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/s03_1850_sites.vcf
+source_1kg_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5a.20130502.sites.fixed.filt.biallelic.vcf.gz
+target_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/sites_1kg_1850_intersect.vcf.gz
+
+--- Resources ---
+
+source_1kg_vcf: /rds/project/erf33/rds-erf33-medgen/resources/phase3_1k_release20130502/wes_pipeline_v01.17/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5a.20130502.sites.fixed.filt.biallelic.vcf
+
+--- Tools ---
+
+bcftools: /rds/project/erf33/rds-erf33-medgen/tools/bcftools/bcftools-1.8/bin/bcftools
+
+Looking for the intesect ...
+
+Number of variants in the intesect:
+1145
+
+Done
+Fri 26 Apr 22:51:28 BST 2019
+

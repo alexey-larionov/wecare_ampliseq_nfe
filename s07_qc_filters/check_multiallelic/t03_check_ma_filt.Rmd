@@ -1,0 +1,117 @@
+---
+title: "Check content of the MA-flag filtered vcf"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: Alexey Larionov, 29Mar2019  
+last updated: Alexey Larionov, 02Apr2019  
+
+# Summary 
+
+Explore how multiallelic sites were flagged   
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+options(width = 999)
+
+```
+
+
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clenan-up
+rm(list=ls())
+
+# Base folder
+library(knitr)
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s07_filter_genotypes_and_variants/check_multiallelic"
+opts_knit$set(root.dir = base_folder)
+options(stringsAsFactors = F,
+        warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+# Load libraries
+library(vcfR)
+
+```
+
+# load_data
+
+```{r load_data}
+
+vcf_file <- paste(base_folder, "ampliseq_nfe_locID_MAflag_vqsr_hf.vcf", sep="/")
+vcfr <- read.vcfR(vcf_file)
+rm(vcf_file)
+
+```
+
+# extract meta and fixed
+
+```{r extract_meta_and_fixed}
+
+# Get data from header and fixed columns
+meta_fix <- vcfR2tidy(vcfr, info_only=T)
+    
+# Get data frame with meta-information from vcf header
+meta.df <- as.data.frame(meta_fix$meta)
+dim(meta.df)
+meta.df
+
+# Get data frame with fixed columns (including parsed INFO, convert tibble to data-frame)
+fixed.df <- as.data.frame(meta_fix$fix)
+dim(fixed.df)
+colnames(fixed.df)
+fixed.df[1:5,1:7]
+
+# Clean-up
+rm(meta_fix, vcfr)
+
+```
+
+# Explore flag and locID
+
+```{r}
+
+summary(as.factor(fixed.df$MultiAllelic))
+
+x <- fixed.df[fixed.df$MultiAllelic,]
+x[1:5,c(1:9,16,23,28)]
+rm(x)
+
+```
+
+# save_data
+
+```{r save_data}
+
+save.image(paste(base_folder, "t03_check_ma_filt.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

@@ -1,0 +1,36 @@
+Job id: 13063313
+Job name: s01_select_variants
+Allocated node: cpu-e-1045
+Time: Wed 10 Jul 19:05:42 BST 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s16_prepare_wecare_genotypes_for_PCA
+
+------------------ Output ------------------
+
+Select 1,140 variants for PCA plots
+Wed 10 Jul 19:05:42 BST 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s16_prepare_wecare_genotypes_for_PCA
+
+selected_1140_sites_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s15_prepare_1kg_genotypes_for_PCA/selected_1140_1kg_genotypes.vcf.gz
+source_ampliseq_nfe_vcf: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s14_annotated_vcf/ampliseq_nfe.vcf
+ampliseq_nfe_1140_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s16_prepare_wecare_genotypes_for_PCA/ampliseq_nfe_1140.vcf.gz
+
+--- Tools ---
+
+bcftools: /rds/project/erf33/rds-erf33-medgen/tools/bcftools/bcftools-1.8/bin/bcftools
+
+Selecting variants ...
+
+Number of variants in the output:
+1,140
+
+Number of samples in the output:
+739
+
+Done
+Wed 10 Jul 19:05:58 BST 2019
+

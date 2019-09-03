@@ -1,0 +1,41 @@
+Job id: 15023352
+Job name: s03_calculate_PCs
+Allocated node: cpu-e-35
+Time: Fri 30 Aug 12:02:28 BST 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s21_calculate_ampliseq_NFE_PCs
+
+------------------ Output ------------------
+
+Calculate PCs for ampliseq-NFE dataset
+Fri 30 Aug 12:02:28 BST 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s21_calculate_ampliseq_NFE_PCs
+
+source_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s21_calculate_ampliseq_NFE_PCs/s02_ampliseq_nfe_1850_715.vcf.gz
+
+--- Tools ---
+
+bcftools: /rds/project/erf33/rds-erf33-medgen/tools/bcftools/bcftools-1.8/bin/bcftools
+plink: /rds/project/erf33/rds-erf33-medgen/tools/plink/plink-1.9/plink
+
+--- Progress ---
+
+Number of variants in the input VCF:
+1,850
+
+Number of samples in the input VCF:
+715
+
+Imported VCF to PLINK (bed-bim-fam file-set)
+
+Excluded variants in LD
+
+Calculated 100 top PCs using 1634 avaialble variants not in LD
+
+Done all tasks
+Fri 30 Aug 12:02:31 BST 2019
+

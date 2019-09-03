@@ -1,0 +1,39 @@
+Job id: 13178886
+Job name: s01_calculate_all_joined_ampliseq_1kg_PCs
+Allocated node: cpu-e-69
+Time: Sun 14 Jul 17:32:41 BST 2019
+
+Initial working folder:
+/rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s20_calculate_all_971_joined_ampliseq_1kg_PCs
+
+------------------ Output ------------------
+
+Calculate PCs for joined ampliseq-1kg dataset
+Sun 14 Jul 17:32:41 BST 2019
+
+--- Files and folders ---
+
+scripts_folder: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/scripts_and_logs/s20_calculate_all_971_joined_ampliseq_1kg_PCs
+
+source_vcf_gz: /rds/project/erf33/rds-erf33-medgen/users/alexey/wecare/wecare_ampliseq/analysis4/ampliseq_nfe/data_and_results/s17_merge_1kg_and_ampliseq_for_PCA/ampliseq_nfe_1kg_1111_3219.vcf.gz
+
+--- Tools ---
+
+bcftools: /rds/project/erf33/rds-erf33-medgen/tools/bcftools/bcftools-1.8/bin/bcftools
+plink: /rds/project/erf33/rds-erf33-medgen/tools/plink/plink-1.9/plink
+
+Number of variants in the input VCF:
+1,111
+
+Number of samples in the input VCF:
+3,219
+
+Imported VCF to PLINK (bed-bim-fam file-set)
+
+Excluded variants in LD
+
+Calculated 100 top PCs using 971 avaialble variants not in LD
+
+Done all tasks
+Sun 14 Jul 17:32:46 BST 2019
+

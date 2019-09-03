@@ -1,0 +1,814 @@
+---
+title: "s03_explore_phenotypes"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL20Sep2018  
+last updated: AL25Apr2019  
+
+# Summary  
+
+Explore phenotype features and balance between cases and controls  
+
+## Findings:  
+
+Ampliseq is slightly older than WES dataset: 50 vs 42 yrs respectively  
+
+No association of CBC with familial history (there was a trend only in WES)  
+
+The only statisitically significant association with CBC was in the applied treatment:  
+there was less treatment in CBC in any modality of treatment (consistent with WES).  
+
+This might possibly be explained by the fact that more cases with radiotherapy  
+were deliberately selected for UBC, as a part of "counter-matching" samples collection.   
+
+If there was no "countermatching" explanations, then such trend could be interpreted  
+as if the treatment protected from CBC, and also might possibly be linked  
+to the trend of having earlier stages in 1st tumour in CBC (less lymph node involvement),  
+**possibly indicating to undrtreatment of the tumours at early stage**.  
+
+**Nearly a quater of the CBC were treated by surgery alone (w/o chemo- or hormonal- treatment)**  
+this was in fasion over the recent decade - but wecare was collected earlier?  
+
+There was some outdated and occasionally unexpected hormonal treatment pratices:  
+- Nearly half of ER+ve patients did not receive hormonal treatment  
+- 27 ER-ve patients received the hormopnal treatment  
+
+CBC tumours were at slightly earlier stage (with less lymph nodes involvement), but less differentialted.  
+All these trends were not significant.  
+
+The potential association of stage/LN and CBC might be mediated by reduced treatment?  
+
+Interestingly, there was no association with pregnancies (in contrast with the WES dataset)  
+There was an odd case with 14 ftp at 48 years ... mitigated by coding of fpt   
+
+NS trends to association of CBC with ER-ve and low-grade tumours  
+No data on grade in WES ?  
+
+As expected, NS trend for more lobular in CBC  
+
+A significant association of CBC and UBC with sample number (t-test 0.04)  
+obviously illustrates the possibility of spurious associations  
+
+Any differences between CBC and UBC, even statistically significant, were modest in size  
+
+At the end I illustrated manual control of colours and factors orders on many occasions  
+https://stackoverflow.com/questions/25211078/what-are-the-default-plotting-colors-in-r-or-ggplot2  
+
+# Point to discuss with MT:  
+Should we include X-ray treatment into the model?  
+My suggestion is NOT to include for compartibility with WES analysis  
+(which is fixed after it was used for candidate genes selection)  
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F, eval=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+library(ggplot2)
+#library(tidyr) # for separate (for VEP parsing)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s11_explore_phenotypes"
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read_data  
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
+load(paste(source_folder, "s02_remove_duplicates.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s11_explore_phenotypes"
+rm(source_folder)
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+# Exclude NFE phenotypes
+phenotypes.df <- phenotypes.df[phenotypes.df$cc != -1,]
+dim(phenotypes.df)
+
+```
+
+# Highly significant association of XRT with CC  
+
+Most likely it is a consequence of the "counter-matched" design of the samples selection  
+
+```{r}
+
+colnames(phenotypes.df)
+cc_rt.df <- phenotypes.df[, c("cc", "xrtbreast")]
+str(cc_rt.df)
+table(cc_rt.df)
+fisher.test(table(cc_rt.df))
+rm(cc_rt.df)
+
+```
+
+#Demographics
+
+##sub_dx_age
+
+```{r sub_dx_age}
+
+ggplot(phenotypes.df) + 
+  aes(sub_dx_age, fill=as.factor(cc)) +
+  geom_density(colour="black", alpha=0.3) +
+  scale_fill_discrete(name="Code", labels=c("UBC", "CBC"))
+
+mean(phenotypes.df$sub_dx_age)
+median(phenotypes.df$sub_dx_age)
+
+t.test(sub_dx_age~cc, data=phenotypes.df)
+
+```
+
+##rstime
+
+```{r rstime}
+
+ggplot(phenotypes.df) + 
+  aes(rstime, fill=as.factor(cc)) +
+  geom_density(colour="black", alpha=0.3) +
+  scale_fill_discrete(name="Code", labels=c("UBC", "CBC"))
+
+mean(phenotypes.df$rstime)
+median(phenotypes.df$rstime)
+
+t.test(rstime~cc, data=phenotypes.df)
+
+```
+
+## Familial history  
+
+Balanced between UBC and CBC
+
+```{r fam_hist}
+
+x <- table(phenotypes.df[,c("cc","family_history")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=as.factor(family_history)) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_discrete(name="")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+##Num ftp
+
+Number of pregnancies  
+
+```{r num_ftp}
+
+# Pregnancies counts at different time points
+summary(as.factor(phenotypes.df$Num_ftp_fd)) # Pregnancies before the 1st Ds
+summary(as.factor(phenotypes.df$rh_num_ftp_fd_rd)) # Pregnancies between Ds1 and Rs time
+summary(as.factor(phenotypes.df$num_ftp_rd)) # Pregnancies at Rs time
+
+sum(phenotypes.df$Num_ftp_fd != phenotypes.df$num_ftp_rd)
+
+# Exclude excessive annotations and rename the retained
+phenotypes.df <- phenotypes.df %>% 
+  rename(num_ftp=num_ftp_rd) %>% 
+  select(-Num_ftp_fd, -rh_num_ftp_fd_rd)
+
+x <- table(phenotypes.df[,c("cc","num_ftp")])
+x
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(phenotypes.df) +
+  aes(as.factor(cc), 
+      fill=factor(num_ftp, levels=c(14,7,6,5,4,3,2,1,0,-1))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(name="",
+    values = c("-1"="#F8766D", 
+                "0"="#D89000", 
+                "1"="#A3A500", 
+                "2"="#39B600", 
+                "3"="#00BF7D", 
+                "4"="#00BFC4", 
+                "5"="#00B0F6", 
+                "6"="#9590FF", 
+                "7"="#E76BF3",
+               "14"="#FF62BC")) + 
+  ggtitle("num_ftp")
+
+# An unusual case...
+phenotypes.df[phenotypes.df$num_ftp==14,c("num_ftp","sub_dx_age")]
+
+rm(x)
+
+```
+
+##Coded number of pregnancies  
+
+```{r num_preg}
+
+num_preg <- rep(NA, nrow(phenotypes.df))
+
+0 -> num_preg[phenotypes.df$num_ftp %in% c(-1,0)] # Never pregnant and non-fulltime pregnancy  
+1 -> num_preg[phenotypes.df$num_ftp %in% c(1,2,3)]
+2 -> num_preg[phenotypes.df$num_ftp %in% c(4,5,6,7,14)]
+
+phenotypes.df <- cbind(phenotypes.df,num_preg)
+
+x <- table(phenotypes.df[,c("cc","num_preg")])
+x
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(phenotypes.df) +
+  aes(as.factor(cc), 
+      fill=factor(num_preg, levels=c(2,1,0))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(name="",
+    values = c("0"="#F8766D", 
+                "1"="#39B600", 
+                "2"="#00B0F6")) + 
+  ggtitle("num_preg_coded")
+
+rm(x, num_preg)
+
+```
+
+#Clinical data
+
+## stage_fd
+
+NS trend to earlier stage (less size and lymph nodes) in CBC  
+
+### p~0.12
+
+```{r stage_fd}
+
+summary(as.factor(phenotypes.df$stage_fd))
+
+x <- table(phenotypes.df[,c("cc","stage_fd")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$stage_fd, levels=c(2,1))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(values = c("2"="#00BFC4", "1"="#F8766D"), name="") + 
+  ggtitle("stage_fd")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+##Tusize1_cat
+
+NS trend for unknown size in CBC  
+
+```{r Tusize1_cat}
+
+summary(as.factor(phenotypes.df$Tusize1_cat))
+
+x <- table(phenotypes.df[,c("cc","Tusize1_cat")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$Tusize1_cat, 
+                                 levels=c("inflammatory","unknown","gt20mm","gt10-le20mm","le10mm"))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) + 
+  scale_fill_discrete(name="") + 
+  ggtitle("Tumour size")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+## Lnsum1_cat
+
+NS trend to less involvement of Lymph-nodes in CBC  
+
+```{r Lnsum1_cat}
+
+summary(as.factor(phenotypes.df$Lnsum1_cat))
+
+x <- table(phenotypes.df[,c("cc","Lnsum1_cat")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$Lnsum1_cat,
+                                 levels=c("positive","negative","no nores sampled","unknown"))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) + 
+  scale_fill_discrete(name="") + 
+  ggtitle("Lymph nodes")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+# Cytotoxic or endocrine treatment
+
+**Significantly less** treatment in CBC  
+Consistent with WES cohort  
+
+## Any/Both  
+
+To do: split by age?  
+Type of treatment by age?  
+
+### p~0.01  
+
+```{r treatment}
+
+summary(as.factor(phenotypes.df$treatment))
+
+x <- table(phenotypes.df[,c("cc","treatment")])
+x
+
+data.df <- phenotypes.df %>% 
+  mutate(tx = hormone_self_mra + chemo_self_mra,
+         chx = hormone_self_mra + chemo_self_mra + xrtbreast)
+
+summary(as.factor(data.df$tx))
+y <- table(data.df[,c("cc","tx")])
+y
+
+summary(as.factor(data.df$chx))
+z<- table(data.df[,c("cc","chx")])
+z
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$treatment, levels=c(1,0))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(labels=c("1" = "Yes", "0" = "No"), values = c("1"="#00BFC4", "0"="#F8766D"), name="") + 
+  ggtitle("Cytotoxic or hormonal treatment (self-reported)")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(data.df) + 
+  aes(as.factor(cc), fill=factor(data.df$tx, levels=c(2,1,0))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(name="", 
+                    labels=c("0" = "None", "1" = "One", "2" = "Both"),
+                    values=c("0"="#F8766D", "1"="#39B600", "2"="#00B0F6")) + 
+  ggtitle("Cytotoxic and hormonal treatment (self-reported)")
+
+ggplot(data.df) + 
+  aes(as.factor(cc), fill=factor(data.df$chx, levels=c(3,2,1,0))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(labels=c("3" = "All", "2" = "Two", "1" = "One", "0" = "No"), 
+                    values = c("3"="#FF62BC", "2"="#00B0F6","1"="#39B600", "0"="#F8766D"),
+                    name="") + 
+  ggtitle("Any of treatments (chemo- horm- or x-ray)")
+
+rm(x,y,z,data.df)
+
+```
+
+## hormone_self_mra
+
+Slightly **less** treatment in CBC  
+
+### p~0.06
+
+```{r hormone_self_mra}
+
+summary(as.factor(phenotypes.df$hormone_self_mra))
+
+x <- table(phenotypes.df[,c("cc","hormone_self_mra")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$hormone_self_mra, levels=c(1,0))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+scale_fill_manual(labels=c("1" = "Yes", "0" = "No"), values = c("1"="#00BFC4", "0"="#F8766D"), name="") + 
+  ggtitle("Hormonal treatment (self-reported)")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(phenotypes.df) + 
+  aes(x = sub_dx_age, fill=factor(phenotypes.df$hormone_self_mra, levels=c(1,0))) +
+  geom_density(colour="black", alpha=0.3) +
+  scale_fill_manual(labels=c("1" = "Yes", "0" = "No"), values = c("1"="#00BFC4", "0"="#F8766D"), name="") + 
+  ggtitle("Hormonal treatment by age")
+
+# Somehow unexpected and outdated hormonal treatment pratices  
+# - Nearly half of ER+ve patients did not receive hormonal treatment
+# - 27 ER-ve patients received the hormopnal treatment
+table(phenotypes.df[,c("er1_cat","hormone_self_mra")])
+
+rm(x)
+
+```
+
+## chemo_self_mra
+
+Slightly **less** treatment in CBC  
+
+### p~0.05  
+
+```{r chemo_self_mra}
+
+summary(as.factor(phenotypes.df$chemo_self_mra))
+
+x <- table(phenotypes.df[,c("cc","chemo_self_mra")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$chemo_self_mra, levels=c(1,0))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(labels=c("1" = "Yes", "0" = "No"), values = c("1"="#00BFC4", "0"="#F8766D"), name="") + 
+  ggtitle("Cytotoxic treatment (self-reported)")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(phenotypes.df) + 
+  aes(x = sub_dx_age, fill=factor(phenotypes.df$chemo_self_mra, levels=c(1,0))) +
+  geom_density(colour="black", alpha=0.3) +
+scale_fill_manual(labels=c("1" = "Yes", "0" = "No"), values = c("1"="#00BFC4", "0"="#F8766D"), name="") + 
+  ggtitle("Cytotoxic treatment by age")
+
+# Expectedly, ER+ve tended to have less cytotoxic treatment 
+table(phenotypes.df[,c("er1_cat","chemo_self_mra")])
+
+rm(x)
+
+```
+
+# X-ray
+
+```{r x_ray}
+
+summary(as.factor(phenotypes.df$xrtbreast))
+
+x <- table(phenotypes.df[,c("cc","xrtbreast")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$xrtbreast, levels=c(1,0))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(labels=c("1" = "Yes", "0" = "No"), values = c("1"="#00BFC4", "0"="#F8766D"), name="") + 
+  ggtitle("X-ray treatment (on breast)")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(phenotypes.df) + 
+  aes(x = sub_dx_age, fill=factor(phenotypes.df$xrtbreast, levels=c(1,0))) +
+  geom_density(colour="black", alpha=0.3) +
+scale_fill_manual(labels=c("1" = "Yes", "0" = "No"), values = c("1"="#00BFC4", "0"="#F8766D"), name="") + 
+  ggtitle("X-ray treatment by age")
+
+# Unexpectedly, ER+ve tended to have more X-ray treatment (60 vs 40%)
+x <- table(phenotypes.df[,c("er1_cat","xrtbreast")])
+x
+
+51/(72+51) # 0.4146341
+166/(121+166) # 0.5783972
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+# X-ray was not concordant with other treatments
+table(phenotypes.df[,c("treatment","xrtbreast")])
+
+rm(x)
+
+```
+
+# Hormone receptors
+
+##er1_cat
+
+NS trend to more ER-ve in CBC  
+
+```{r er1_cat}
+
+summary(as.factor(phenotypes.df$er1_cat))
+
+x <- table(phenotypes.df[,c("cc","er1_cat")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$er1_cat, 
+                                 levels=c("unknown", "positive", "negative"))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(name="",
+    values = c("negative"="#F8766D", 
+                "unknown"="grey", 
+                "positive"="#00BFC4")) + 
+  ggtitle("er1_cat")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(phenotypes.df) + 
+  aes(x = sub_dx_age, fill=factor(phenotypes.df$er1_cat, 
+                                 levels=c("unknown", "positive", "negative"))) +
+  geom_density(colour="black", alpha=0.3) +
+  scale_fill_manual(name="",
+    values = c("negative"="#F8766D", 
+                "unknown"="grey", 
+                "positive"="#00BFC4")) + 
+  ggtitle("ER by age")
+
+rm(x)
+
+```
+
+##pr1_cat
+
+PgR were virtually identical in CBC and UBC  
+
+```{r pr1_cat}
+
+summary(as.factor(phenotypes.df$pr1_cat))
+
+x <- table(phenotypes.df[,c("cc","pr1_cat")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$pr1_cat, 
+                                 levels=c("unknown", "positive", "negative"))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_manual(name="",
+    values = c("negative"="#F8766D", 
+                "unknown"="grey", 
+                "positive"="#00BFC4")) + 
+  ggtitle("pr1_cat")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+ggplot(phenotypes.df) + 
+  aes(x = sub_dx_age, fill=factor(phenotypes.df$pr1_cat, 
+                                 levels=c("unknown", "positive", "negative"))) +
+  geom_density(colour="black", alpha=0.3) +
+  scale_fill_manual(name="",
+    values = c("negative"="#F8766D", 
+                "unknown"="grey", 
+                "positive"="#00BFC4")) + 
+  ggtitle("PR by age")
+
+rm(x)
+
+```
+
+## Er & PgR
+
+```{r er-pr}
+
+phenotypes.df <- phenotypes.df %>% mutate(epr=paste(er1_cat, pr1_cat))
+
+ggplot(phenotypes.df) +
+  aes( as.factor(cc), fill=as.factor(epr)) +
+  geom_bar(colour="black", alpha=0.3) + 
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  facet_grid(er1_cat~pr1_cat) + 
+  ylab("ER") + 
+  ggtitle ("PR")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+# Pathology
+
+##grade1
+
+NS trend to less differentiated tumours in CBC  
+
+```{r grade1}
+
+summary(as.factor(phenotypes.df$grade1))
+
+x <- table(phenotypes.df[,c("cc","grade1")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$grade1, 
+                                 levels=c("unknown","poor/undifferentiated","moderate","well"))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) + 
+  scale_fill_discrete(name="") + 
+  ggtitle("grade1")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+##Hist_lob_other
+
+Insignificant trend to more lobular in CBC  
+p ~0.1  
+
+CDH1 is in the list; if these 14 cases are because of CDH1, then it might be picked up  
+
+```{r Hist_lob_other}
+
+summary(as.factor(phenotypes.df$Hist_lob_other))
+
+x <- table(phenotypes.df[,c("cc","Hist_lob_other")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=as.factor(Hist_lob_other)) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_discrete(name="") + 
+  ggtitle("Hist_lob_other")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+##histo1_cat
+
+Insignificant trend to more lobular in CBC  
+
+```{r histo1_cat}
+
+summary(as.factor(phenotypes.df$histo1_cat))
+
+x <- table(phenotypes.df[,c("cc","histo1_cat")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=factor(phenotypes.df$histo1_cat, 
+                                 levels=c("other carcinoma", "medullary", "Tubular/mucinous", "lobular", "ductal"))) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_discrete(name="") + 
+  ggtitle("histo1_cat")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+# etc
+
+## Sample number
+
+Common sense check ...   
+A significant association of CBC and UBC with sample number  
+## t-test 0.04  
+
+```{r sample_number}
+
+ggplot(phenotypes.df) + 
+  aes(Sample_num, fill=as.factor(cc)) +
+  geom_density(colour="black", alpha=0.3) + 
+  scale_fill_discrete(name="", labels=c("0" = "UBC", "1" = "CBC"))
+
+t.test(Sample_num~cc, data=phenotypes.df)
+
+```
+
+## Illumina ID number
+
+```{r lumi_number}
+
+cc <- phenotypes.df$cc
+lumi_num <- phenotypes.df$illumina_id
+lumi_num <- as.integer(substr(lumi_num, 2, 5))
+data.df <- data_frame(lumi_num,cc)
+
+ggplot(data.df) + 
+  aes(lumi_num, fill=as.factor(cc)) +
+  geom_density(colour="black", alpha=0.3) + 
+  scale_fill_discrete(name="", labels=c("0" = "UBC", "1" = "CBC"))
+
+t.test(lumi_num~cc, data=data.df)
+
+rm(lumi_num,cc,data.df)
+
+```
+
+## Lane of sequencing  
+
+```{r lane}
+
+x <- table(phenotypes.df[,c("cc","illumina_lane")])
+x
+
+ggplot(phenotypes.df) + 
+  aes(as.factor(cc), fill=as.factor(illumina_lane)) +
+  geom_bar(colour="black", alpha=0.3) +
+  scale_x_discrete(name ="", labels=c("0" = "UBC", "1" = "CBC")) +
+  scale_fill_discrete(name="")
+
+chisq.test(x,simulate.p.value=TRUE)
+fisher.test(x,simulate.p.value=TRUE)
+
+rm(x)
+
+```
+
+## Codes for default colours
+Used in some plots above  
+
+https://stackoverflow.com/questions/25211078/what-are-the-default-plotting-colors-in-r-or-ggplot2  
+
+```{r default_colours}
+
+df <- data.frame(type=factor(c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")), 
+                 value=1:10)
+p <- ggplot(df, aes(x = value, y = value, color = type, fill = type)) +
+    geom_point(shape = 21, size = 4)
+p
+ggplot_build(p)$data
+
+rm(df, p)
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

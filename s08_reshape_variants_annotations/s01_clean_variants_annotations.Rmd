@@ -1,0 +1,160 @@
+---
+title: "s01_clean_variants_annotations"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL10Dec2018  
+last updated: AL23Apr2019  
+
+# Summary  
+
+Remove empty and uniform variants annotations
+
+Overall changes the variants annotations number from 110 to 101  
+
+Rename variants annotations dataframe: fixed.mx -> vars.mx
+
+# start section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+# eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+library(tidyr) # for separate (parsing of cDNA, CDC and prot positions)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s08_reshape_variants_annotations"
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# read data
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s07_qc_filters"
+load(paste(source_folder, "r03_filter_cases.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s08_reshape_variants_annotations"
+rm(source_folder)
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+dim(gt.mx)
+dim(fixed.df)
+colnames(fixed.df)
+str(fixed.df, list.len=ncol(fixed.df))
+
+vars.df <- fixed.df
+
+rm(fixed.df)
+
+```
+
+# Remove empty fields from vars.df
+
+```{r remove_empty_fields}
+
+all_na.udf <- function(x){all(is.na(x))}
+
+empty_fields <- apply(vars.df, 2, all_na.udf)
+sum(empty_fields)
+colnames(vars.df)[empty_fields]
+
+vars.df <- vars.df[,!empty_fields]
+dim(vars.df)
+
+rm(all_na.udf, empty_fields)
+
+```
+
+# Check for uniform fields in vars.df
+
+```{r remove_unifirm_fields}
+
+uniform_vector.udf <- function(x)(length(table(x))==1)
+
+uniform_fields <- apply(vars.df, 2, uniform_vector.udf)
+sum(uniform_fields)
+colnames(vars.df)[uniform_fields]
+vars.df[1:5,uniform_fields]
+
+summary(as.factor(vars.df$FILTER))
+summary(as.factor(vars.df$AS_FilterStatus))
+summary(as.factor(vars.df$exac_non_TCGA.Hemi_EAS))
+summary(as.factor(vars.df$exac_non_TCGA.Hemi_OTH))
+summary(as.factor(vars.df$SYMBOL_SOURCE))
+
+vars.df <- vars.df %>% 
+  select(-FILTER, -AS_FilterStatus, -exac_non_TCGA.Hemi_EAS, -exac_non_TCGA.Hemi_OTH, -SYMBOL_SOURCE)
+
+dim(vars.df)
+
+rm(uniform_vector.udf, uniform_fields)
+
+```
+
+# Check data
+
+```{r final_check}
+
+ls()
+dim(gt.mx)
+dim(vars.df)
+
+```
+
+# Save result
+
+```{r save_result}
+
+save.image(paste(base_folder, "s01_clean_variants_annotations.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

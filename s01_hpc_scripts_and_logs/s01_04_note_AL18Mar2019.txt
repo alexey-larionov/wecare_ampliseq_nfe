@@ -1,0 +1,1 @@
+Steps s01-s04 (FASTQ reading, QC and trimming) are taken w/o change from Analysis 3
