@@ -1,12 +1,12 @@
 ---
-title: "s04_explore_ethnicity_of_214_715_outliers"
+title: "exclude outliers and recalculate AC, AN, AF"
 output: html_document
 editor_options: 
   chunk_output_type: console
 ---
 
 started: AL26Apr2019  
-last updated: AL02Sep2019  
+last updated: AL05Sep2019  
 
 # Summary  
 
@@ -16,7 +16,7 @@ Exclude samples:
 
 Then:  
 - exclude variants that were present in the excluded samples only  
-- recalculate AC-AN-AF-s in whole data and in NFE, UBC and CC sub-groups  
+- recalculate AC-AN-AF-s in whole data and in NFE, BC, UBC and CBC sub-groups  
 
 Inputs:  
 - Table with 46 WECARE-NFE-1KG outliers: based on WECARE-NFE and WECARE-NFE-KGEN eigenvectors  
@@ -223,6 +223,22 @@ rm(nfe_genotypes.mx)
 
 ```
 
+## BC AC-AN-AF
+
+```{r bc_acanaf}
+
+bc_genotypes.mx <- genotypes.mx[,phenotypes.df$group!="NFE"]
+dim(bc_genotypes.mx)
+
+bc_AC <- apply(bc_genotypes.mx, 1, sum, na.rm=T)
+bc_AN <- apply(bc_genotypes.mx, 1, an.udf)
+bc_AF <- bc_AC/bc_AN
+hist(bc_AF, lab=T, ylim=c(0,1500))
+
+rm(bc_genotypes.mx)
+
+```
+
 ## UBC AC-AN-AF
 
 ```{r ubc_acanaf}
@@ -261,11 +277,13 @@ rm(cbc_genotypes.mx, an.udf)
 
 variants.df <- data.frame(variants.df,
   total_AC, total_AN, total_AF,
+  bc_AC, bc_AN, bc_AF, 
   nfe_AC, nfe_AN, nfe_AF,
   ubc_AC, ubc_AN, ubc_AF,
   cbc_AC, cbc_AN, cbc_AF)
 
 rm(total_AC, total_AN, total_AF,
+  bc_AC, bc_AN, bc_AF,
   nfe_AC, nfe_AN, nfe_AF,
   ubc_AC, ubc_AN, ubc_AF,
   cbc_AC, cbc_AN, cbc_AF)
@@ -276,7 +294,7 @@ rm(total_AC, total_AN, total_AF,
 
 ```{r save_results}
 
-save.image(paste(base_folder, "s05_exclude_outliers.RData", sep="/"))
+save.image(paste(base_folder, "s05_exclude_outliers_recalculate_acanaf.RData", sep="/"))
 
 ```
 

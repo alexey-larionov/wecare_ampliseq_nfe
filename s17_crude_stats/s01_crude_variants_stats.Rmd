@@ -1,0 +1,440 @@
+---
+title: "crude_variants_stats"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: Alexey Larionov, 27Feb2017  
+last updated: Alexey Larionov, 05Sep2019
+
+# Summary  
+
+Calculate for each variant:  
+
+- Fisher tests for NFE vs BC  
+- Fisher test for UBC vs CBC  
+- prop.trend.test for NFE:UBC:CBC (along to 1:2:3 scores)  
+
+### Explore crude aggregated stats per variant  
+Mean agregated MAC: 2.2  
+Median agregated MAC: 1  
+
+The deflation in QQ-plots reflects low AC-s (becuase of selected low AF-s)  
+
+###Input and output data:  
+- 164 variants x 667 samples (470BC = 233UBC + 237CBC and 197NFE)  
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clenan-up
+rm(list=ls())
+
+# Base folder
+library(knitr)
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s17_crude_stats"
+opts_knit$set(root.dir = base_folder)
+#setwd(base_folder)
+
+# Load libraries
+library(dplyr)
+
+# Accessory function
+source(paste(base_folder, "f01_qqunif_plot.R", sep="/"))
+
+```
+
+# load_data
+
+```{r load_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s16_filter_by_effect_on_protein_and_AF"
+load(paste(source_folder, "s02_filter_by_AF.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s17_crude_stats"
+rm(source_folder)
+
+```
+
+# check_data
+
+```{r check_data}
+
+ls()
+
+dim(genotypes.mx)
+dim(variants.df)
+dim(phenotypes.df)
+
+# Check consistency of rownames and colnames
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# Get raw stats per each variant
+
+Calculate Fisher-exact tests and trend in proportion for raw counts.  
+Note that trends in raw counts are evaluated **BEFORE** imputation.  
+
+The result is still in character matrix that need to be converted to df with appropriate data types.  
+
+```{r get_raw_stats_per_gene}
+
+# Prepare blank matrix for the stats
+header <- c("SplitVarID", "nfe_bc_fisher_p", "ubc_cbc_fisher_p", "prop_trend_p", "crude_trend_direction")
+crude_stats.mx <- matrix(nrow=0, ncol=length(header))
+header -> colnames(crude_stats.mx)
+
+# For each variant
+for(v in 1:nrow(variants.df)){
+  
+  # Current variant
+  cur_var <- variants.df[v,]
+
+  # Fisher exact test: nfe vs bc
+  fisher_nfe_bc.mx <- matrix(c(
+    cur_var$nfe_AC, 
+    cur_var$nfe_AN - cur_var$nfe_AC, 
+    cur_var$bc_AC, 
+    cur_var$bc_AN - cur_var$bc_AC), 
+    nrow=2)
+  nfe_bc_fisher_p <- fisher.test(fisher_nfe_bc.mx)$p.value
+
+  # Fisher exact test: cbc vs ubc
+  fisher_cbc_ubc.mx <- matrix(c(
+    cur_var$cbc_AC, 
+    cur_var$cbc_AN - cur_var$cbc_AC, 
+    cur_var$ubc_AC, 
+    cur_var$ubc_AN - cur_var$ubc_AC), 
+    nrow=2)
+  cbc_ubc_fisher_p <- fisher.test(fisher_cbc_ubc.mx)$p.value
+
+  # Proportions trend test: nfe-ubc-cbc
+  ac_prop_trend <- c(cur_var$nfe_AC, 
+                     cur_var$ubc_AC, 
+                     cur_var$cbc_AC)
+  
+  an_prop_trend <- c(cur_var$nfe_AN, 
+                     cur_var$ubc_AN, 
+                     cur_var$cbc_AN)
+  
+  prop_trend_p <- prop.trend.test(ac_prop_trend, an_prop_trend)$p.value
+  
+  # Trend call
+  crude_trend_direction <- "None"
+  if(cur_var$nfe_AF < cur_var$cbc_AF) crude_trend_direction <- "Risk"
+  if(cur_var$nfe_AF > cur_var$cbc_AF) crude_trend_direction <- "Protective"
+
+  result <- c(cur_var$SplitVarID,
+              nfe_bc_fisher_p, cbc_ubc_fisher_p, prop_trend_p, crude_trend_direction)
+  
+  # Record to result matrix 
+  crude_stats.mx <- rbind(crude_stats.mx, result) 
+
+  # Clean-up
+  rm(cur_var, 
+     fisher_nfe_bc.mx, fisher_cbc_ubc.mx, ac_prop_trend, an_prop_trend, 
+     nfe_bc_fisher_p, cbc_ubc_fisher_p, prop_trend_p, crude_trend_direction, result)
+
+}
+
+# Check result
+dim(crude_stats.mx)
+
+# Add rownames
+crude_stats.mx[,"SplitVarID"] -> rownames(crude_stats.mx)
+
+# Clean-up
+rm(header, v)
+
+```
+
+# Convert chr stats mx to df with appropriate datatypes
+
+```{r convert_stats_to_df}
+
+crude_stats.df <- as.data.frame(crude_stats.mx, stringsAsFactors = FALSE)
+str(crude_stats.df)
+
+crude_stats.df$nfe_bc_fisher_p <- as.numeric(crude_stats.df$nfe_bc_fisher_p)
+crude_stats.df$ubc_cbc_fisher_p <- as.numeric(crude_stats.df$ubc_cbc_fisher_p)
+crude_stats.df$prop_trend_p <- as.numeric(crude_stats.df$prop_trend_p)
+
+# Check result
+str(crude_stats.df)
+
+# Clean-up
+rm(crude_stats.mx)
+
+```
+
+# Add FDR-s
+
+```{r add_fdrs}
+
+nfe_bc_fisher_fdr <- p.adjust(crude_stats.df$nfe_bc_fisher_p, method="fdr")
+min(nfe_bc_fisher_fdr)
+
+ubc_cbc_fisher_fdr <- p.adjust(crude_stats.df$ubc_cbc_fisher_p, method="fdr")
+min(ubc_cbc_fisher_fdr)
+
+prop_trend_fdr <- p.adjust(crude_stats.df$prop_trend_p, method="fdr")
+min(prop_trend_fdr)
+
+crude_stats.df <- data.frame(crude_stats.df,
+                                 nfe_bc_fisher_fdr,
+                                 ubc_cbc_fisher_fdr,
+                                 prop_trend_fdr)
+
+# Clean-up
+rm(nfe_bc_fisher_fdr,ubc_cbc_fisher_fdr,prop_trend_fdr)
+
+```
+
+# Add results to variants table
+
+```{r add_results_to_var_table}
+
+sum(variants.df$SplitVarID != crude_stats.df$SplitVarID)
+crude_stats.df <- crude_stats.df[,-1]
+variants.df <- data.frame(variants.df,crude_stats.df)
+rm(crude_stats.df)
+
+```
+
+# Look at the variants with significant crude trend
+
+One missense variant was much more common in NFE than in Ampliseq;  
+However, it was more common in CBC than in UBC  
+
+```{r explore_raw_stats}
+
+table(variants.df[,"crude_trend_direction"])
+variants.df %>% 
+  filter(prop_trend_fdr <= 0.05) %>% 
+  select(SplitVarID, SYMBOL, Consequence, CLIN_SIG, crude_trend_direction, nfe_AF, ubc_AF, cbc_AF, 
+         nfe_bc_fisher_fdr, ubc_cbc_fisher_fdr, prop_trend_fdr)
+
+```
+
+Different p-values do not correlate to each other  
+
+```{r p-values_against_each_other}
+
+# Plot different p-values against each other
+plot(variants.df$nfe_bc_fisher_p, variants.df$ubc_cbc_fisher_p)
+plot(variants.df$nfe_bc_fisher_p, variants.df$prop_trend_p)
+plot(variants.df$ubc_cbc_fisher_p, variants.df$prop_trend_p)
+
+```
+
+# Crude "risk" candidates
+
+```{r risk_candidates}
+
+# Top "BC risk" candidates
+
+variants.df %>% 
+  filter(crude_trend_direction=="Risk", nfe_bc_fisher_p < 0.05) %>% 
+  select(SplitVarID, SYMBOL, Consequence, CLIN_SIG,
+         nfe_AF, ubc_AF, cbc_AF, nfe_bc_fisher_p, ubc_cbc_fisher_p, 
+         prop_trend_p, nfe_bc_fisher_fdr, ubc_cbc_fisher_fdr, prop_trend_fdr) %>% 
+  arrange(nfe_bc_fisher_p)
+
+a <- variants.df %>% filter(crude_trend_direction=="Risk", nfe_bc_fisher_p < 0.05) %>% select(SplitVarID)
+
+# Top "CBC risk" candidates
+variants.df %>% 
+  filter(crude_trend_direction=="Risk", ubc_cbc_fisher_p < 0.05) %>% 
+  select(SplitVarID, SYMBOL, Consequence, CLIN_SIG,
+         nfe_AF, ubc_AF, cbc_AF, nfe_bc_fisher_p, ubc_cbc_fisher_p, 
+         prop_trend_p, nfe_bc_fisher_fdr, ubc_cbc_fisher_fdr, prop_trend_fdr) %>% 
+  arrange(ubc_cbc_fisher_p)
+
+b <- variants.df %>% filter(crude_trend_direction=="Risk", ubc_cbc_fisher_p < 0.05) %>% select(SplitVarID)
+
+# Top "trend risk" candidates
+variants.df %>% 
+  filter(crude_trend_direction=="Risk", prop_trend_p < 0.05) %>% 
+  select(SplitVarID, SYMBOL, Consequence, CLIN_SIG,
+         nfe_AF, ubc_AF, cbc_AF, nfe_bc_fisher_p, ubc_cbc_fisher_p, 
+         prop_trend_p, nfe_bc_fisher_fdr, ubc_cbc_fisher_fdr, prop_trend_fdr) %>% 
+  arrange(prop_trend_p)
+
+c <- variants.df %>% filter(crude_trend_direction=="Risk", prop_trend_p < 0.05) %>% select(SplitVarID)
+
+# Intersects
+
+intersect(a,b)
+intersect(b,c)
+intersect(a,c)
+
+# Clean-up
+rm(a,b,c)
+
+```
+
+# Crude "protective" candidates
+
+Anyway: it does not make sence to look at "protective" in low-frequency,  
+because  should not be rare, if beneficial ...  
+
+```{r protective_candidates}
+
+# Top "BC protective" candidates
+
+variants.df %>% 
+  filter(crude_trend_direction=="Protective", nfe_bc_fisher_p < 0.05) %>% 
+  select(SplitVarID, SYMBOL, Consequence, CLIN_SIG,
+         nfe_AF, ubc_AF, cbc_AF, nfe_bc_fisher_p, ubc_cbc_fisher_p, 
+         prop_trend_p, nfe_bc_fisher_fdr, ubc_cbc_fisher_fdr, prop_trend_fdr) %>% 
+  arrange(nfe_bc_fisher_p)
+
+a <- variants.df %>% filter(crude_trend_direction=="Protective", nfe_bc_fisher_p < 0.05) %>% select(SplitVarID)
+
+# Top "CBC protective" candidates
+variants.df %>% 
+  filter(crude_trend_direction=="Protective", ubc_cbc_fisher_p < 0.05) %>% 
+  select(SplitVarID, SYMBOL, Consequence, CLIN_SIG,
+         nfe_AF, ubc_AF, cbc_AF, nfe_bc_fisher_p, ubc_cbc_fisher_p, 
+         prop_trend_p, nfe_bc_fisher_fdr, ubc_cbc_fisher_fdr, prop_trend_fdr) %>% 
+  arrange(ubc_cbc_fisher_p)
+
+b <- variants.df %>% filter(crude_trend_direction=="Protective", ubc_cbc_fisher_p < 0.05) %>% select(SplitVarID)
+
+# Top "trend protective" candidates
+variants.df %>% 
+  filter(crude_trend_direction=="Protective", prop_trend_p < 0.05) %>% 
+  select(SplitVarID, SYMBOL, Consequence, CLIN_SIG,
+         nfe_AF, ubc_AF, cbc_AF, nfe_bc_fisher_p, ubc_cbc_fisher_p, 
+         prop_trend_p, nfe_bc_fisher_fdr, ubc_cbc_fisher_fdr, prop_trend_fdr) %>% 
+  arrange(prop_trend_p)
+
+c <- variants.df %>% filter(crude_trend_direction=="Protective", prop_trend_p < 0.05) %>% select(SplitVarID)
+
+# Intersects
+
+intersect(a,b)
+intersect(b,c)
+intersect(a,c)
+
+# Clean-up
+rm(a,b,c)
+
+```
+
+# QQ-plots
+
+Assuming uniform p-value distributions under the null-hypothesis  
+
+```{r qq-plots}
+
+# nfe_bc_fisher_p
+min(variants.df$nfe_bc_fisher_p)
+
+qqunif.plot(variants.df[,"nfe_bc_fisher_p"], 
+            main="NFE vs BC\ncrude counts per variant\nFisher exact test")
+
+qqunif.plot(variants.df[variants.df$SplitVarID!="Var000003110","nfe_bc_fisher_p"], 
+            main="NFE vs BC (excluding one variant in DCHS2)\ncrude counts per variant\nFisher exact test")
+
+# ubc_cbc_fisher_p
+min(variants.df$ubc_cbc_fisher_p)
+
+qqunif.plot(variants.df$ubc_cbc_fisher_p, 
+            main="UBC vs CBC\ncrude counts per variant\nFisher exact test")
+
+# prop trend p
+min(variants.df$prop_trend_p)
+
+qqunif.plot(variants.df$prop_trend_p, 
+            main="NFE-UBC-CBC\ncrude counts aggregated per gene\nTrend in proportions test")
+
+qqunif.plot(variants.df[variants.df$SplitVarID!="Var000003110","prop_trend_p"], 
+            main="NFE-UBC-CBC (excluding one variant in DCHS2)\ncrude counts per variant\nTrend in proportions test")
+
+# Clean-up
+rm(qqunif.plot)
+
+```
+
+# explore_MACs
+
+Crude allelic counts show no role for ATM in CBC  
+On the contrary, there could be role for CHEK2  
+
+```{r explore_MACs}
+
+# Histograms of MACs
+hist(variants.df$total_AC, labels = TRUE, ylim=c(0,200), 
+     xlab="ACs per variants (bins)", ylab="num of varints")
+
+mean(variants.df$total_AC)
+median(variants.df$total_AC)
+
+# Variants with high MACs (non-weighted!)
+variants.df %>% 
+  select(SplitVarID, total_AF, total_AC, SYMBOL, Consequence, CLIN_SIG, 
+         nfe_bc_fisher_p, ubc_cbc_fisher_p,crude_trend_direction) %>% 
+  filter(total_AC>10) %>% 
+  arrange(desc(total_AC))
+
+```
+
+# data_summary
+
+```{r data_summary}
+
+ls()
+
+dim(genotypes.mx)
+dim(variants.df)
+dim(phenotypes.df)
+
+# Check consistency of rownames and colnames
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# save_data
+
+```{r save_data}
+
+save.image(paste(base_folder, "s01_crude_variants_stats.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```
