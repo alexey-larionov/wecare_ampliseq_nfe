@@ -1,0 +1,23 @@
+Initially, 17 variants were selected, which where either 
+(i)   LoF or 
+(ii)  Delerious/damaging missenses or 
+(iii) pathogenic in ClinVar.  
+
+After review, only 5 of them were selected for downstream consideration:  
+all that had been annotated as "HIGH" impact by VEP.  
+
+Carriers have been selected and BAMs have been reviewed in IGV.  
+Only 3 variants/carriers were taken further to be excluded from analysis: 
+samples no 48, 137 and 140.  Of them only sample 48 has an absolutely 
+convincing evidence; the remaining two samples (137 and 140) are less  
+convincing, but still have been kept in the carriers list on the balance 
+of evidence and phenotype.  
+
+A previous analysis with different filtering settings: (new versions of 
+tools and resources) suggested 4 carriers: 48, 311, 317 and 377.  
+These 3 samples have also been included to the carriers list on the 
+balance of evidence and phenotype.  
+
+Therefore, the final list of BRCA1, BRCA2 or PALB2 carriers included 
+6 samples: 48, 137, 140, 311, 317 and 377.  Of them sample 48 is 
+definate and others are reasonably supported by sequencing and phenotype. 
