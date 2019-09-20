@@ -1,0 +1,34 @@
+Select 712 ampliseq-nfe samples for joined PCA
+Tue 17 Sep 2019 13:44:28 BST
+
+--- Files and folders ---
+
+source_samples_file: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe//s12_joined_ampliseq-nfe_1kgp_PCA/s01_prepare_data_for_joined_PCA/data/s01_ampliseq_nfe_712_samples.txt
+source_ampliseq_nfe_1838_739_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe//s13_ampliseq-nfe_only_PCA/s01_prepare_wecare_nfe_genotypes/data/s01_ampliseq_nfe_1838_739.vcf.gz
+target_ampliseq_nfe_1838_712_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe//s13_ampliseq-nfe_only_PCA/s01_prepare_wecare_nfe_genotypes/data/s02_ampliseq_nfe_1838_712.vcf.gz
+
+--- Tools ---
+
+bcftools 1.9
+Using htslib 1.9
+Copyright (C) 2018 Genome Research Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+--- Progress ---
+
+Number of samples in the source samples file:
+     712
+
+Selecting samples ...
+
+Number of variants in the output:
+1,838
+
+Number of samples in the output:
+712
+
+Done
+Tue 17 Sep 2019 13:44:31 BST
+

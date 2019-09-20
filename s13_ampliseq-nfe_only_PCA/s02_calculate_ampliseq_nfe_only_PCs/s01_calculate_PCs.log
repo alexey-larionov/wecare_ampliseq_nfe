@@ -1,0 +1,38 @@
+Calculate PCs for ampliseq-nfe only dataset (excluding rare variants and variants in LD)
+Tue 17 Sep 2019 14:34:33 BST
+
+--- Files and folders ---
+
+scripts_folder: 
+source_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s01_prepare_wecare_nfe_genotypes/data/s02_ampliseq_nfe_1838_712.vcf.gz
+
+--- Tools ---
+
+bcftools 1.9
+Using htslib 1.9
+Copyright (C) 2018 Genome Research Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+PLINK v1.90b6.10 64-bit (17 Jun 2019)
+
+--- Progress ---
+
+Number of variants in the input VCF:
+1,838
+
+Number of samples in the input VCF:
+712
+
+Imported VCF to PLINK (bed-bim-fam file-set)
+
+Excluded rare variants
+
+Excluded variants in LD
+
+Calculated 100 top PCs for ampliseq-nfe dataset using 215 non-rare variants not in LD
+
+Done all tasks
+Tue 17 Sep 2019 14:34:34 BST
+

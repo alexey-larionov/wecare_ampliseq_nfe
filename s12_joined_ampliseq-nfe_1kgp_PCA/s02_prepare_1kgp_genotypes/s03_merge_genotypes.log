@@ -1,0 +1,34 @@
+Merge genotypes for 1,130 variants from 1kg for joined PCA
+Mon 16 Sep 2019 15:43:39 BST
+
+--- Files and folders ---
+
+start_folder: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s02_prepare_1kgp_genotypes
+source_data_folder: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s02_prepare_1kgp_genotypes/data/s02_by_chromosome
+output_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s02_prepare_1kgp_genotypes/data/s03_1kgp_1130_2504.vcf.gz
+
+--- Tools ---
+
+bcftools 1.9
+Using htslib 1.9
+Copyright (C) 2018 Genome Research Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+--- Progress ---
+
+Detected       22 files to concatenate
+
+Concatenating ...
+
+
+Number of variants in the output:
+1,130
+
+Number of samples in the output:
+2,504
+
+Done
+Mon 16 Sep 2019 15:43:41 BST
+

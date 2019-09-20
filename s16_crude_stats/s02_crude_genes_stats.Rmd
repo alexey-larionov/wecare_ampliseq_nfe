@@ -6,11 +6,11 @@ editor_options:
 ---
 
 started: Alexey Larionov, 27Feb2017  
-last updated: Alexey Larionov, 05Sep2019
+last updated: Alexey Larionov, 19Sep2019
 
 # Summary  
 
-164 variants -> 62 genes
+162 variants -> 62 genes
 
 Make a data frame with gene-level aggregated crude statistics:  
 
@@ -26,11 +26,21 @@ qq-plots involving NFE (NFE-vs-BC and NFE-UBC-CBC trend) show p-values reasonabl
 The deflation for UBC-vs-CBC may reflect low numbers of cases and low counts of variants with AF < 0.05  
 
 ###Input data:  
-- 164 variants x 667 samples (470BC = 233UBC + 237CBC and 197NFE)  
+- 162 variants x 664 samples (467BC = 232UBC + 235CBC and 197NFE)  
 
 ###Output data:  
-- 164 variants x 667 samples  
-- 62 genes x 667 samples  
+- 162 variants x 664 samples  
+- 62 genes x 664 samples  
+
+###Overall:
+No significantly associated genes after multiple testing correction  
+
+Of the "risk" genes, before the multiple testing:  
+- SETX gene stands out for risk because of the difference between NFE and BC  
+- BRIP1 gene stands out becaus of the trend NFE<UBC<CBC  
+
+Of the "protective genes"  
+- DCHS2 was more present in NFE than in Ampliseq (approaching significance after FDR too)  
 
 # start_section
 
@@ -64,12 +74,13 @@ graphics.off()
 
 # Base folder
 library(knitr)
-base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s17_crude_stats"
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s16_crude_stats"
 opts_knit$set(root.dir = base_folder)
 #setwd(base_folder)
 
 # Load libraries
 library(dplyr)
+library(QQperm)
 
 # Accessory function
 source(paste(base_folder, "f01_qqunif_plot.R", sep="/"))
@@ -91,13 +102,8 @@ load(paste(base_folder, "s01_crude_variants_stats.RData", sep="/"))
 ls()
 
 dim(genotypes.mx)
-genotypes.mx[1:5,1:5]
-
 dim(variants.df)
-variants.df[1:5,1:5]
-
 dim(phenotypes.df)
-phenotypes.df[1:5,1:5]
 
 # Check consistency of rownames and colnames
 sum(colnames(genotypes.mx) != rownames(phenotypes.df))
@@ -333,7 +339,8 @@ genes.df %>%
 
 genes.df[c("ATM","CHEK2","NF1","NRG1","ERCC6"), 
                    c("aggr_af_nfe", "aggr_af_ubc", "aggr_af_cbc", 
-                     "nfe_bc_fisher_p", "ubc_cbc_fisher_p", "prop_trend_p")]
+                     "nfe_bc_fisher_p", "ubc_cbc_fisher_p", "prop_trend_p",
+                     "crude_trend_direction")]
 
 ```
 
@@ -449,23 +456,35 @@ Assuming uniform p-value distributions under the null-hypothesis
 # nfe_bc_fisher_p
 min(genes.df$nfe_bc_fisher_p)
 
-qqunif.plot(genes.df[,"nfe_bc_fisher_p"], 
-            main="NFE vs BC\ncrude counts aggregated per gene\nFisher exact test")
+p_obs <- genes.df$nfe_bc_fisher_p
+p_exp <- ppoints(p_obs)
+cptn="NFE vs BC\ncrude counts aggregated per gene\nFisher exact test"
+
+qqunif.plot(p_obs, main=cptn)
+estlambda2(p.o=p_obs, p.e=p_exp, plot=T, main=cptn)
 
 # ubc_cbc_fisher_p
 min(genes.df$ubc_cbc_fisher_p)
 
-qqunif.plot(genes.df$ubc_cbc_fisher_p, 
-            main="UBC vs CBC\ncrude counts aggregated per gene\nFisher exact test")
+p_obs <- genes.df$ubc_cbc_fisher_p
+p_exp <- ppoints(p_obs)
+cptn="UBC vs CBC\ncrude counts aggregated per gene\nFisher exact test"
+
+qqunif.plot(p_obs, main=cptn)
+estlambda2(p.o=p_obs, p.e=p_exp, plot=T, main=cptn)
 
 # prop trend p
 min(genes.df$prop_trend_p)
 
-qqunif.plot(genes.df$prop_trend_p, 
-            main="NFE-UBC-CBC\ncrude counts aggregated per gene\nTrend in proportions test")
+p_obs <- genes.df$prop_trend_p
+p_exp <- ppoints(p_obs)
+cptn="NFE<UBC<CBC\ncrude counts aggregated per gene\nTrend in proportions test"
+
+qqunif.plot(p_obs, main=cptn)
+estlambda2(p.o=p_obs, p.e=p_exp, plot=T, main=cptn)
 
 # Clean-up
-rm(qqunif.plot)
+rm(qqunif.plot, p_obs, p_exp, cptn)
 
 ```
 
@@ -479,7 +498,7 @@ However, no further increase in CBC vs UBC (rather contrary for CHEK2)
 # Selected genes: candidates from previous analyses and
 # GFRAL was an outlier, because of NFE >> UBC/CBC : likely methodical difference between KGEN and WECARE
 genes.df[c("ATM","CHEK2"), 
-                   c("aggr_ac", "aggr_ac_nfe", "aggr_ac_bc", "aggr_ac_ubc", "aggr_ac_cbc")]
+         c("aggr_ac", "aggr_ac_nfe", "aggr_ac_bc", "aggr_ac_ubc", "aggr_ac_cbc","crude_trend_direction")]
 
 # Histograms of aggregated MACs
 hist(genes.df$aggr_ac, labels = TRUE, ylim=c(0,65), 
@@ -494,7 +513,10 @@ median(genes.df$aggr_ac)
 
 # Genes with high MACs (non-weighted!)
 x <- genes.df %>% 
-  select(gene, num_var, multiallelic, aggr_ac, nfe_bc_fisher_p, ubc_cbc_fisher_p,crude_trend_direction) %>% 
+  select(gene, num_var, multiallelic, aggr_ac, 
+         aggr_af_nfe, aggr_af_ubc, aggr_af_cbc, 
+         nfe_bc_fisher_p, ubc_cbc_fisher_p,prop_trend_p,
+         crude_trend_direction) %>% 
   arrange(desc(aggr_ac))
 x[1:10,]
 

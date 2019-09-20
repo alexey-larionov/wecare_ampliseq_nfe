@@ -1,0 +1,38 @@
+Calculate PCs for joined 1kgp-ampliseq-nfe dataset (excluding rare variants and variants in LD)
+Mon 16 Sep 2019 17:33:04 BST
+
+--- Files and folders ---
+
+scripts_folder: 
+source_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s04_merge_1kgp_and_wecare_nfe_genotypes/data/s01_joined_1kgp_ampliseq_nfe_biallelic_snps_1101_3216.vcf.gz
+
+--- Tools ---
+
+bcftools 1.9
+Using htslib 1.9
+Copyright (C) 2018 Genome Research Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+PLINK v1.90b6.10 64-bit (17 Jun 2019)
+
+--- Progress ---
+
+Number of variants in the input VCF:
+1,101
+
+Number of samples in the input VCF:
+3,216
+
+Imported VCF to PLINK (bed-bim-fam file-set)
+
+Excluded rare variants
+
+Excluded variants in LD
+
+Calculated 100 top PCs for joined 1kgp and ampliseq-nfe dataset using 293 non-rare variants not in LD
+
+Done all tasks
+Mon 16 Sep 2019 17:33:09 BST
+

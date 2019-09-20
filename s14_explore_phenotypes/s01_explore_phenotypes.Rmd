@@ -1,40 +1,45 @@
 ---
-title: "s03_explore_phenotypes"
+title: "s01_explore_phenotypes"
 output: html_document
 editor_options: 
   chunk_output_type: console
 ---
 
 started: AL20Sep2018  
-last updated: AL25Apr2019  
+last updated: AL18Sep2019  
 
 # Summary  
 
 Explore phenotype features and balance between cases and controls  
 
+Input and output:  
+- WECARE-NFE dataset of 1,503 variants x 664 samples (467BC = 232UBC + 235CBC and 197NFE)  
+
 ## Findings:  
 
-Ampliseq is slightly older than WES dataset: 50 vs 42 yrs respectively  
+Ampliseq is slightly older than WES dataset: 50 vs 42 yrs respectively;  
+although no difference in ade between cases and controls (because the controld were matched)   
 
-No association of CBC with familial history (there was a trend only in WES)  
+No association of CBC with familial history (there was a non-significant trend in WES)  
 
-The only statisitically significant association with CBC was in the applied treatment:  
+The only statisitically significant association was with the applied treatment:  
 there was less treatment in CBC in any modality of treatment (consistent with WES).  
 
 This might possibly be explained by the fact that more cases with radiotherapy  
 were deliberately selected for UBC, as a part of "counter-matching" samples collection.   
 
 If there was no "countermatching" explanations, then such trend could be interpreted  
-as if the treatment protected from CBC, and also might possibly be linked  
+in a "reverse-causality" way: as if the treatment protected from CBC, and also might possibly be linked  
 to the trend of having earlier stages in 1st tumour in CBC (less lymph node involvement),  
 **possibly indicating to undrtreatment of the tumours at early stage**.  
-
+This speculation could be consistent with the fact that  
 **Nearly a quater of the CBC were treated by surgery alone (w/o chemo- or hormonal- treatment)**  
 this was in fasion over the recent decade - but wecare was collected earlier?  
 
-There was some outdated and occasionally unexpected hormonal treatment pratices:  
+There was outdated hormonal treatment pratices  
 - Nearly half of ER+ve patients did not receive hormonal treatment  
-- 27 ER-ve patients received the hormopnal treatment  
+- 23 ER-ve patients received the hormopnal treatment  
+- a significant proportion of cases has unknown HR  
 
 CBC tumours were at slightly earlier stage (with less lymph nodes involvement), but less differentialted.  
 All these trends were not significant.  
@@ -49,7 +54,7 @@ No data on grade in WES ?
 
 As expected, NS trend for more lobular in CBC  
 
-A significant association of CBC and UBC with sample number (t-test 0.04)  
+A suggestive association of CBC and UBC with sample number (t-test 0.06)  
 obviously illustrates the possibility of spurious associations  
 
 Any differences between CBC and UBC, even statistically significant, were modest in size  
@@ -59,7 +64,8 @@ https://stackoverflow.com/questions/25211078/what-are-the-default-plotting-color
 
 # Point to discuss with MT:  
 Should we include X-ray treatment into the model?  
-My suggestion is NOT to include for compartibility with WES analysis  
+My suggestion is NOT to include X-ray into the model  
+for compartibility with WES analysis  
 (which is fixed after it was used for candidate genes selection)  
 
 # start_section
@@ -94,7 +100,7 @@ library(dplyr)
 library(ggplot2)
 #library(tidyr) # for separate (for VEP parsing)
 
-base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s11_explore_phenotypes"
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s14_explore_phenotypes"
 opts_knit$set(root.dir = base_folder)
 
 options(stringsAsFactors = F)
@@ -112,9 +118,9 @@ options(warnPartialMatchArgs = T,
 
 ```{r read_data}
 
-source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s10_remove_duplicates"
-load(paste(source_folder, "s02_remove_duplicates.RData", sep="/"))
-base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s11_explore_phenotypes"
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s03_explore_PCA_plots_exclude_outliers"
+load(paste(source_folder, "s03_exclude_outliers_recalculate_acanaf.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s14_explore_phenotypes"
 rm(source_folder)
 
 ```
@@ -130,8 +136,15 @@ dim(variants.df)
 sum(colnames(genotypes.mx) != rownames(phenotypes.df))
 sum(rownames(genotypes.mx) != rownames(variants.df))
 
+```
+
 # Exclude NFE phenotypes
+
+```{r exclude_nfe}
+
+table(phenotypes.df$cc)
 phenotypes.df <- phenotypes.df[phenotypes.df$cc != -1,]
+table(phenotypes.df$cc)
 dim(phenotypes.df)
 
 ```
@@ -162,8 +175,8 @@ ggplot(phenotypes.df) +
   geom_density(colour="black", alpha=0.3) +
   scale_fill_discrete(name="Code", labels=c("UBC", "CBC"))
 
+quantile(phenotypes.df$sub_dx_age)
 mean(phenotypes.df$sub_dx_age)
-median(phenotypes.df$sub_dx_age)
 
 t.test(sub_dx_age~cc, data=phenotypes.df)
 
@@ -293,7 +306,7 @@ rm(x, num_preg)
 
 NS trend to earlier stage (less size and lymph nodes) in CBC  
 
-### p~0.12
+### p~0.08
 
 ```{r stage_fd}
 
@@ -462,7 +475,8 @@ ggplot(phenotypes.df) +
 
 # Somehow unexpected and outdated hormonal treatment pratices  
 # - Nearly half of ER+ve patients did not receive hormonal treatment
-# - 27 ER-ve patients received the hormopnal treatment
+# - 23 ER-ve patients received the hormopnal treatment
+# - a significant proportion of cases has unknown HR
 table(phenotypes.df[,c("er1_cat","hormone_self_mra")])
 
 rm(x)

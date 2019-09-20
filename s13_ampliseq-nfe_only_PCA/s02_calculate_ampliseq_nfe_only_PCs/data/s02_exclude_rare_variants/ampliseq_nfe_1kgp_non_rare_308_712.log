@@ -1,0 +1,37 @@
+PLINK v1.90b6.10 64-bit (17 Jun 2019)
+Options in effect:
+  --allow-no-sex
+  --bfile /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s02_calculate_ampliseq_nfe_only_PCs/data/s01_vcf_to_plink/ampliseq_nfe_1838_712
+  --maf 0.01
+  --make-bed
+  --out /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s02_calculate_ampliseq_nfe_only_PCs/data/s02_exclude_rare_variants/ampliseq_nfe_1kgp_non_rare_308_712
+  --silent
+
+Hostname: mgpc101.medschl.private.cam.ac.uk
+Working directory: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s02_calculate_ampliseq_nfe_only_PCs
+Start time: Tue Sep 17 14:34:34 2019
+
+Random number seed: 1568727274
+8192 MB RAM detected; reserving 4096 MB for main workspace.
+1838 variants loaded from .bim file.
+712 people (0 males, 0 females, 712 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to
+/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s02_calculate_ampliseq_nfe_only_PCs/data/s02_exclude_rare_variants/ampliseq_nfe_1kgp_non_rare_308_712.nosex
+.
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 712 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is 0.988169.
+1530 variants removed due to minor allele threshold(s)
+(--maf/--max-maf/--mac/--max-mac).
+308 variants and 712 people pass filters and QC.
+Note: No phenotypes present.
+--make-bed to
+/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s02_calculate_ampliseq_nfe_only_PCs/data/s02_exclude_rare_variants/ampliseq_nfe_1kgp_non_rare_308_712.bed
++
+/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s02_calculate_ampliseq_nfe_only_PCs/data/s02_exclude_rare_variants/ampliseq_nfe_1kgp_non_rare_308_712.bim
++
+/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s02_calculate_ampliseq_nfe_only_PCs/data/s02_exclude_rare_variants/ampliseq_nfe_1kgp_non_rare_308_712.fam
+... done.
+
+End time: Tue Sep 17 14:34:34 2019

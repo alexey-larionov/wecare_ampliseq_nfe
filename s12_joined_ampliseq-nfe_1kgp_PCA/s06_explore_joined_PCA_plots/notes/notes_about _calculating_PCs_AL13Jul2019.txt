@@ -1,0 +1,12 @@
+AL14Jul2019:
+
+The VCF file with 1850 variants prepared at previous step was taken to HPC to merge with variants from 1kg VCF, prune and calculate PCs in PLINK (see s15-s20 steps in HPC scripts). Then the calculated eigenvectors and eigenvalues were imported back from HPC to laptop.   
+
+PCs from 3 sets of variants were calculated and compared:
+- 141 common (MAF>0.05) variants not in LD
+- 293 not rate (MAF>0.01) variants not in LD
+- all 971 variants not in LD
+
+For all 3 sets the PC1-PC2 plots separated major 1kg populations and located most of Wecare samples amongst Europeans.  293 and 971 plots were very similar.  
+
+The eigenvectors from all 971 variants where taken to use in the downstream analyses.  

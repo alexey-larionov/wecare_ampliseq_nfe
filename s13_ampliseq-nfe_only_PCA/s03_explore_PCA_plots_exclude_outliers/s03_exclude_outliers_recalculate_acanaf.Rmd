@@ -1,0 +1,282 @@
+---
+title: "exclude outliers and recalculate AC, AN, AF"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL26Apr2019  
+last updated: AL17Sep2019  
+
+# Summary  
+
+Exclude 48 eigenvector outliers detected in joined Ampliseq-NFE-1KG PCA  
+
+Then:  
+- exclude variants that were present in the excluded samples only  
+- recalculate AC-AN-AF-s in whole data and in NFE, BC, UBC and CBC sub-groups  
+
+Input:  
+- WECARE-NFE dataset of 1,838 variants x 712 samples (515BC = 258UBC + 257CBC and 197NFE)  
+
+Output:  
+- WECARE-NFE dataset of 1,503 variants x 664 samples (467BC = 232UBC + 235CBC and 197NFE)  
+
+# Start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s03_explore_PCA_plots_exclude_outliers"
+
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# Read_data  
+
+```{r read_data}
+
+load(paste(base_folder, "s02_explore_ethnicity_of_outliers.RData", sep="/"))
+
+```
+
+# Check data
+
+```{r}
+
+ls()
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# Remove 48 PCA outliers
+
+Also  
+
+- remove unnecesary columns from phenotypes data frame  
+- sync genotypes matrix  
+
+```{r remove_outliers}
+
+# Remove outliers
+phenotypes.df <- phenotypes.df[!phenotypes.df$joined_pca_outlier,]
+
+# Remove unnecessary columns
+colnames(phenotypes.df)
+phenotypes.df <- phenotypes.df[,1:31]
+colnames(phenotypes.df)
+
+# Syncronise genotypes
+genotypes.mx <- genotypes.mx[,rownames(phenotypes.df)]
+
+# Check result
+dim(genotypes.mx)
+dim(phenotypes.df)
+
+```
+
+# Update variants
+
+```{r}
+
+# Function to detect uniform vectors (expects vectors containing 0,1,2 or NA only)
+uniform.udf <- function(x){
+  if(all(is.na(x))) return(TRUE) # Return T if all are NA
+  min(x,na.rm=T)==max(x,na.rm=T)} # Return T if min=max, otherwise return F
+
+uniform_variants <- apply(genotypes.mx, 1, uniform.udf)
+sum(uniform_variants)
+
+genotypes.mx <- genotypes.mx[!uniform_variants,]
+variants.df <- variants.df[!uniform_variants,]
+
+dim(genotypes.mx)
+dim(variants.df)
+
+rm(uniform_variants, uniform.udf)
+
+```
+
+# Recalculate AC-AN-AF-s
+
+## AN function and groups check
+
+In general, this simpified version of AN function should only work for autosomes;   
+However, it works here for X chromosome too, because all the subjects are females.  
+
+```{r an_and_counts}
+
+an.udf <- function(x){2*sum(!is.na(x))}
+summary(as.factor(phenotypes.df$group))
+
+```
+
+## Total AC-AN-AF
+
+```{r total_acanaf}
+
+total_AC <- apply(genotypes.mx, 1, sum, na.rm=T)
+total_AN <- apply(genotypes.mx, 1, an.udf)
+total_AF <- total_AC/total_AN
+hist(total_AF, lab=T, ylim=c(0,1500))
+
+```
+
+## NFE AC-AN-AF
+
+```{r nfe_acanaf}
+
+nfe_genotypes.mx <- genotypes.mx[,phenotypes.df$group=="NFE"]
+dim(nfe_genotypes.mx)
+
+nfe_AC <- apply(nfe_genotypes.mx, 1, sum, na.rm=T)
+nfe_AN <- apply(nfe_genotypes.mx, 1, an.udf)
+nfe_AF <- nfe_AC/nfe_AN
+hist(nfe_AF, lab=T, ylim=c(0,1500))
+
+rm(nfe_genotypes.mx)
+
+```
+
+## BC AC-AN-AF
+
+```{r bc_acanaf}
+
+bc_genotypes.mx <- genotypes.mx[,phenotypes.df$group!="NFE"]
+dim(bc_genotypes.mx)
+
+bc_AC <- apply(bc_genotypes.mx, 1, sum, na.rm=T)
+bc_AN <- apply(bc_genotypes.mx, 1, an.udf)
+bc_AF <- bc_AC/bc_AN
+hist(bc_AF, lab=T, ylim=c(0,1500))
+
+rm(bc_genotypes.mx)
+
+```
+
+## UBC AC-AN-AF
+
+```{r ubc_acanaf}
+
+ubc_genotypes.mx <- genotypes.mx[,phenotypes.df$group=="UBC"]
+dim(ubc_genotypes.mx)
+
+ubc_AC <- apply(ubc_genotypes.mx, 1, sum, na.rm=T)
+ubc_AN <- apply(ubc_genotypes.mx, 1, an.udf)
+ubc_AF <- ubc_AC/ubc_AN
+hist(ubc_AF, lab=T, ylim=c(0,1500))
+
+rm(ubc_genotypes.mx)
+
+```
+
+## CBC AC-AN-AF
+
+```{r cbc_acanaf}
+
+cbc_genotypes.mx <- genotypes.mx[,phenotypes.df$group=="CBC"]
+dim(cbc_genotypes.mx)
+
+cbc_AC <- apply(cbc_genotypes.mx, 1, sum, na.rm=T)
+cbc_AN <- apply(cbc_genotypes.mx, 1, an.udf)
+cbc_AF <- cbc_AC/cbc_AN
+hist(cbc_AF, lab=T, ylim=c(0,1500))
+
+rm(cbc_genotypes.mx, an.udf)
+
+```
+
+## Add acanaf-s to variants table
+
+```{r update_variants}
+
+variants.df <- data.frame(variants.df,
+  total_AC, total_AN, total_AF,
+  bc_AC, bc_AN, bc_AF, 
+  nfe_AC, nfe_AN, nfe_AF,
+  ubc_AC, ubc_AN, ubc_AF,
+  cbc_AC, cbc_AN, cbc_AF)
+
+colnames(variants.df)
+
+rm(total_AC, total_AN, total_AF,
+  bc_AC, bc_AN, bc_AF,
+  nfe_AC, nfe_AN, nfe_AF,
+  ubc_AC, ubc_AN, ubc_AF,
+  cbc_AC, cbc_AN, cbc_AF)
+
+```
+
+# Check data
+
+```{r}
+
+ls()
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# Save results
+
+```{r save_results}
+
+save.image(paste(base_folder, "s03_exclude_outliers_recalculate_acanaf.RData", sep="/"))
+
+```
+
+# Final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

@@ -1,0 +1,147 @@
+---
+title: "s01_ampliseq_nfe_variants_and_samples"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL26Apr2019  
+last updated: AL16Sep2019  
+
+# Summary  
+
+Prepare list of cleaned sampes and variants for making VCF that will be used for joined PCA  
+
+Input and output data: 1,838 vars x 712 samples ( 515BC = 258UBC + 257CBC and 197NFE)  
+
+# Start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s01_prepare_data_for_joined_PCA"
+
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+#options(error = browser()) # Type Q or c to exit, drop browser level
+# https://support.rstudio.com/hc/en-us/articles/200713843?version=1.1.456&mode=desktop
+# https://stackoverflow.com/questions/13052522/how-to-leave-the-r-browser-mode-in-the-console-window/13052588 
+
+```
+
+# Read_data  
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s11_remove_BRCA_PALB_carriers"
+load(paste(source_folder, "s03_exclude_BRCA1_BCRA2_PALB2_carriers.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s01_prepare_data_for_joined_PCA"
+rm(source_folder)
+
+```
+
+# Check data
+
+```{r start_check}
+
+ls()
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+table(phenotypes.df$cc)
+
+```
+
+# Explore allelic frequencies
+
+```{r explore_AFs}
+
+hist(variants.df$init_AF, lab=T, ylim=c(0,1800))
+hist(variants.df$kgen.AF, lab=T, ylim=c(0,1100))
+plot(kgen.AF~init_AF, data=variants.df,
+     main="AF observed in the dataset vs AF observed in kgen")
+abline(0,1,col="red")
+
+```
+
+# Export variants data for sites vcf
+
+```{r export_variants}
+
+colnames(variants.df)
+
+data_for_vcf.df <- data.frame(
+  variants.df[,c("CHROM","POS","REF","ALT","QUAL")],
+  ID=".", FILTER="PASS", 
+  INFO=paste("SplitVarID",variants.df$SplitVarID,sep="="))
+
+data_for_vcf.df <- data_for_vcf.df[,c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")]
+"#CHROM" -> colnames(data_for_vcf.df)[1]
+
+data_for_vcf.df[1:5,]
+
+file_name <- paste(base_folder,"data","s01_ampliseq_nfe_1838_vars.txt", sep="/")
+
+write.table(data_for_vcf.df, file=file_name, 
+            quote = F, sep = "\t", row.names=F, col.names=T)
+
+```
+
+# Export list of samples
+
+```{r export_samples}
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+
+samples_file <- paste(base_folder,"data","s01_ampliseq_nfe_712_samples.txt", sep="/")
+
+write.table(phenotypes.df[,"long_ids",drop=F], file=samples_file,
+            quote=F, sep="\t", row.names=F, col.names=F)
+
+```
+
+# Final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

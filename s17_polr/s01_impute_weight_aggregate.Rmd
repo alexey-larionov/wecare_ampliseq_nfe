@@ -6,7 +6,7 @@ editor_options:
 ---
 
 started: Alexey Larionov, 27Feb2017  
-last updated: Alexey Larionov, 06Sep2019
+last updated: Alexey Larionov, 20Sep2019
 
 # Summary  
 
@@ -14,13 +14,13 @@ Perform SKAT-style data preprocessing and aggregation
 Preprocessing steps done in the following order:  
 
 - Read and check the data  
-- *No need in inverting genotypes* because no variants with AFs > 0.5  
-- Impute missed genotypes (2 x total AF = mean genotype, as "" in SKAT)  
-- Weight variants by total AFs (beta[1,25], default weight in SKAT)  
-- Aggregate preprocessed (inverted-imputed-weighted) variants per genes (just add: as in "burden" SKAT style)  
+- *No need in inverting genotypes* because there is no variants with AFs > 0.5  
+- Impute missed genotypes (2 x total AF = mean genotype, as "fixed" imputation in SKAT)  
+- Weight variants by total AFs (dbeta[AF,1,25], default weight in SKAT, *assumes AF < 0.5* !!!)  
+- Aggregate preprocessed (imputed-weighted) variants per genes (just summation: as in "burden" SKAT style)  
 
 ##Input & output data:  
-- 164 variants (62 genes) x 667 samples (470BC = 233UBC + 237CBC and 197NFE)  
+- 162 variants (62 genes) x 664 samples (467BC = 232UBC + 235CBC and 197NFE)  
 
 # start_section
 
@@ -50,10 +50,11 @@ Sys.time()
 
 # Clenan-up
 rm(list=ls())
+graphics.off()
 
 # Base folder
 library(knitr)
-base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s18_polr"
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s17_polr"
 opts_knit$set(root.dir = base_folder)
 #setwd(base_folder)
 
@@ -66,9 +67,9 @@ library(dplyr)
 
 ```{r load_data}
 
-source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s17_crude_stats"
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s16_crude_stats"
 load(paste(source_folder, "s02_crude_genes_stats.RData", sep="/"))
-base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s18_polr"
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s17_polr"
 rm(source_folder)
 
 ```
@@ -94,16 +95,20 @@ sum(rownames(genotypes.mx) != rownames(variants.df))
 
 Substitute NA with mean genotype per variant (= duplicated **total** AFs).  
 Equivalent to the "fixed" imputation approach in SKAT (see impute.method parameter for SKAT function).  
-Note: using genotypes/AF safter inversion (called "flipping" in SKAT)  
+Note: No AFs > 0.5 !!!
 
 ```{r impute_missed_data}
+
+# Check AFs
+max(variants.df$total_AF)
 
 # Prepare matrix for output
 genotypes_imp.mx <- genotypes.mx
 
 # Fraction of missed data 
-sum(is.na(genotypes_imp.mx))/
-  (nrow(genotypes_imp.mx)*ncol(genotypes_imp.mx)) # ~3.6%
+sum(is.na(genotypes.mx))
+sum(is.na(genotypes.mx))/
+  (nrow(genotypes.mx)*ncol(genotypes.mx)) # ~3.6%
 
 # Impute missed data
 for(var in 1:nrow(genotypes_imp.mx)){
@@ -123,6 +128,8 @@ for(var in 1:nrow(genotypes_imp.mx)){
 
 # Check the result
 sum(is.na(genotypes_imp.mx)) # 0
+hist(genotypes_imp.mx, lab=T, ylim=c(0,1.3e5))
+hist(genotypes_imp.mx[genotypes_imp.mx>0], lab=T, ylim=c(0,4.5e3))
 
 # Clean-up
 rm(var)
@@ -151,7 +158,7 @@ for(var in 1:nrow(genotypes_imp_wt.mx)){
   weight -> variants.df[var,"weight"]
   
   # Apply weights to genotypes table
-  weight * genotypes_imp_wt.mx[var,] -> genotypes_imp_wt.mx[var,]
+  weight * genotypes_imp.mx[var,] -> genotypes_imp_wt.mx[var,]
   
   # Clean-up
   rm(weight)
@@ -167,10 +174,10 @@ hist(variants.df$weight, lab=T, ylim=c(0,160))
 min(genotypes_imp_wt.mx)
 max(genotypes_imp_wt.mx)
 
-hist(genotypes_imp_wt.mx)
-hist(genotypes_imp_wt.mx[genotypes_imp_wt.mx>0])
-hist(genotypes_imp_wt.mx[genotypes_imp_wt.mx>0.5])
-hist(genotypes_imp_wt.mx[genotypes_imp_wt.mx>25])
+hist(genotypes_imp_wt.mx, lab=T, ylim=c(0,1.2e5))
+hist(genotypes_imp_wt.mx[genotypes_imp_wt.mx>0], lab=T, ylim=c(0,4.5e3))
+
+hist(genotypes_imp_wt.mx[genotypes_imp_wt.mx>0.5], lab=T, ylim=c(0,3e2))
 
 # clean-up
 rm(var, genotypes_imp.mx)
@@ -240,9 +247,15 @@ for(ind in which(genes_data.mx > 40)){
   
 }
 
-hist(genes_data.mx)
-hist(genes_data.mx[genes_data.mx > 1 & genes_data.mx < 40])
-hist(genes_data.mx[genes_data.mx > 25 & genes_data.mx < 40])
+# Check SETX
+hist(genes_data.mx[genes.df$gene=="SETX",], lab=T, ylim=c(0,7e2))
+phenotypes.df[c("102_S466_L008","142_S501_L008"),
+              c("cc")]
+
+# 
+hist(genes_data.mx, lab=T, ylim=c(0,4.5e4))
+hist(genes_data.mx[genes_data.mx > 1 & genes_data.mx < 40],
+     lab=T, ylim=c(0,3e2))
 
 # Clean-up
 rm(gene, genes, x, ind)

@@ -1,0 +1,151 @@
+---
+title: "Filter by AF"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+started: AL25Sep2018  
+last updated: AL19Sep2019  
+
+# Summary  
+
+Input: WECARE-NFE dataset of 1,503 variants x 664 samples (467BC = 232UBC + 235CBC and 197NFE)  
+Output: 1,309 variants x 664 samples
+
+- Remove common variants with 0.05 < total_AF < 0.95 (consistent with WES analysis)  
+- Variants with AF 0.01-0.05 are preserved; however, they will be down-weighted by AF later  
+
+# start_section
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r set_width, echo=F}
+
+#eval=F
+
+options(width = 999)
+# https://stackoverflow.com/questions/36845178/width-of-r-code-chunk-output-in-rmarkdown-files-knitr-ed-to-html
+
+```
+
+```{r start_section}
+
+Sys.time()
+rm(list=ls())
+graphics.off()
+
+library(knitr)
+library(dplyr)
+
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s15_filter_by_effect_on_protein_and_AF"
+
+opts_knit$set(root.dir = base_folder)
+
+options(stringsAsFactors = F)
+options(warnPartialMatchArgs = T, 
+        warnPartialMatchAttr = T, 
+        warnPartialMatchDollar = T)
+
+```
+
+# read_data  
+
+```{r read_data}
+
+source_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s13_ampliseq-nfe_only_PCA/s03_explore_PCA_plots_exclude_outliers"
+load(paste(source_folder, "s03_exclude_outliers_recalculate_acanaf.RData", sep="/"))
+base_folder="/Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s15_filter_by_effect_on_protein_and_AF"
+rm(source_folder)
+
+```
+
+# Check data
+
+```{r start_check}
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+sum(rownames(genotypes.mx) != rownames(variants.df))
+
+```
+
+# Explore AFs
+
+```{r explore_AFs}
+
+hist(variants.df$total_AF, lab=T, ylim=c(0,1500))
+
+# Rare **and low-frequency** variants
+sum(variants.df$total_AF <= 0.05) # Low-frequency (including Rare) ALTs
+sum(variants.df$total_AF >= 0.95) # Low-frequency (including Rare) REFs (non-representative reference genome)
+sum(variants.df$total_AF > 0.05 & variants.df$total_AF < 0.95 ) # common variants
+
+```
+
+# Exclude common variants
+
+```{r exclude_common_variants}
+
+# Make list of variants
+common_variants <- variants.df$total_AF > 0.05 & variants.df$total_AF < 0.95
+sum(common_variants)
+
+# Exclude common variants from genotype and variants tables
+variants.df <- variants.df[!common_variants,]
+genotypes.mx <- genotypes.mx[!common_variants,]
+
+# Check result
+hist(variants.df$total_AF, lab=T, ylim=c(0,1500))
+
+# Low-frequency REFs: all will be excluded later
+variants.df %>% 
+  filter(total_AF>0.5) %>% 
+  select(SplitVarID,SYMBOL,Consequence,CLIN_SIG)
+
+# Clean-up
+rm(common_variants)
+
+```
+
+# Check data
+
+```{r end_check}
+
+dim(genotypes.mx)
+dim(phenotypes.df)
+dim(variants.df)
+
+sum(rownames(variants.df) != rownames(genotypes.mx))
+sum(colnames(genotypes.mx) != rownames(phenotypes.df))
+
+```
+
+# save_results
+
+```{r save_results}
+
+save.image(paste(base_folder, "s01_filter_by_AF.RData", sep="/"))
+
+```
+
+# final_section
+
+```{r final_section}
+
+ls()
+sessionInfo()
+Sys.time()
+
+```

@@ -1,0 +1,39 @@
+Merge 2,504 1kgp and 712 ampliseq-nfe genotypes for PCA
+Mon 16 Sep 2019 16:47:08 BST
+
+--- Files and folders ---
+
+kgp_1130_2504_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s02_prepare_1kgp_genotypes/data/s03_1kgp_1130_2504.vcf.gz
+ampliseq_nfe_1130_712_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s03_prepare_wecare_nfe_genotypes/data/s02_ampliseq_nfe_1130_712.vcf.gz
+joined_1kgp_wecare_nfe_biallelic_snps_vcf: /Users/alexey/Documents/wecare/ampliseq/v04_ampliseq_nfe/s12_joined_PCA/s04_merge_1kgp_and_wecare_nfe_genotypes/data/s01_joined_1kgp_ampliseq_nfe_biallelic_snps_1101_3216.vcf.gz
+
+--- Tools ---
+
+bcftools 1.9
+Using htslib 1.9
+Copyright (C) 2018 Genome Research Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+--- Progress ---
+
+Merging VCFs ...
+
+Number of variants in the raw output:
+1,130
+
+Number of samples in the raw output:
+3,216
+
+Keeping only biallelic SNPs ...
+
+Number of variants in the final output:
+1,101
+
+Number of samples in the final output:
+3,216
+
+Done
+Mon 16 Sep 2019 16:47:15 BST
+
